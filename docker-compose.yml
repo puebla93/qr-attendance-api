@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-    web:
+    api:
         build: .
         command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
         container_name: qr_attendace_api
@@ -14,7 +14,7 @@ services:
         build: ./nginx
         container_name: ng_server
         depends_on:
-            - web
+            - api
         command: nginx -g 'daemon off;'
         ports:
             - "80:80"
