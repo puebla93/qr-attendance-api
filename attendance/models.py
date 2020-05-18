@@ -17,10 +17,10 @@ class Attendances(models.Model):
     # course name (eg. Programming, Artificial Intelligence)
     course_name = models.CharField(max_length=255, null=False)
 
-    # class type (eg. )
+    # class type (eg. Practical Lesson, Conference)
     class_type = models.CharField(max_length=255, null=False)
 
-    # class details
+    # class details (eg. Last Practical Lesson, First Conference)
     details = models.CharField(max_length=255, null=True)
 
     def __str__(self):
