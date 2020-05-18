@@ -1,3 +1,27 @@
 from django.db import models
 
-# Create your models here.
+
+class Attendances(models.Model):
+    # student id
+    id = models.CharField(max_length=255, null=False)
+
+    # student name
+    name = models.CharField(max_length=255, null=False)
+
+    # teacher name
+    teacher = models.CharField(max_length=255, null=False)
+
+    # class date
+    date = models.DateField(editable=False)
+
+    # course name (eg. Programming, Artificial Intelligence)
+    course_name = models.CharField(max_length=255, null=False)
+
+    # class type (eg. )
+    class_type = models.CharField(max_length=255, null=False)
+
+    # class details
+    details = models.CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return "{} - {}:{} - {}".format(self.name, self.class_type, self.course_name, self.date)
