@@ -3,10 +3,10 @@ from django.db import models
 
 class Attendances(models.Model):
     # student id
-    id = models.CharField(max_length=255, null=False)
+    student_id = models.CharField(max_length=255, null=False)
 
     # student name
-    name = models.CharField(max_length=255, null=False)
+    student_name = models.CharField(max_length=255, null=False)
 
     # teacher name
     teacher = models.CharField(max_length=255, null=False)
@@ -24,4 +24,4 @@ class Attendances(models.Model):
     details = models.CharField(max_length=255, null=True)
 
     def __str__(self):
-        return "{} - {}:{} - {}".format(self.name, self.class_type, self.course_name, self.date)
+        return "{} - {}:{} - {}".format(self.student_name, self.class_type, self.course_name, self.date)
