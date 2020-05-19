@@ -1,8 +1,33 @@
 from rest_framework import serializers
-from .models import Attendances
+
+from .models import Attendances, ClassTypes, Courses, Students, Teachers
+
+
+class StudentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Students
+        fields = ("id", "name")
+
+
+class TeachersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Teachers
+        fields = ("name")
+
+
+class ClassTypesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClassTypes
+        fields = ("class_type")
+
+
+class CoursesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Courses
+        fields = ("course_name")
 
 
 class AttendancesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendances
-        fields = ("student_id", "student_name", "teacher", "course_name", "class_type", "date", "details")
+        fields = ("student", "teacher", "date", "course_name", "class_type", "details")
