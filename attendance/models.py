@@ -11,6 +11,19 @@ class Students(models.Model):
     def __str__(self):
         return "N:{} CI:{}".format(self.name, self.id)
 
+    @staticmethod
+    def valid_id(id):
+        from datetime import datetime
+        try:
+            datetime(int("19"+id[:2]), int(id[2:4]), int(id[4:6]))
+        except ValueError:
+            try:
+                datetime(int("20"+id[:2]), int(id[2:4]), int(id[4:6]))
+            except ValueError:
+                return False
+
+        return True
+
 
 class Teachers(models.Model):
     # teacher name
@@ -46,8 +59,8 @@ class Attendances(models.Model):
     # class date
     date = models.DateField(editable=False)
 
-    # course name (eg. Programming, Artificial Intelligence)
-    course_name = models.ForeignKey(ClassTypes)
+    # course (eg. Programming, Artificial Intelligence)
+    course = models.ForeignKey(ClassTypes)
 
     # class type (eg. Practical Lesson, Conference)
     class_type = models.ForeignKey(ClassTypes)
@@ -56,4 +69,4 @@ class Attendances(models.Model):
     details = models.CharField(max_length=255, null=True)
 
     def __str__(self):
-        return "{} - {}:{} - {}".format(self.student, self.class_type, self.course_name, self.date)
+        return "{} - {}:{} - {}".format(self.student, self.class_type, self.course, self.date)
