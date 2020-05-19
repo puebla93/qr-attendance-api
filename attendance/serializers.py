@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Attendances, ClassTypes, Courses, Students, Teachers
+from .models import *
 
 
 class StudentsSerializer(serializers.ModelSerializer):
