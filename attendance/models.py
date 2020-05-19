@@ -51,19 +51,19 @@ class Courses(models.Model):
 
 class Attendances(models.Model):
     # the student
-    student = models.ForeignKey(Students)
+    student = models.ForeignKey(Students, on_delete=models.CASCADE)
 
     # the class teacher
-    teacher = models.ForeignKey(Teachers)
+    teacher = models.ForeignKey(Teachers, on_delete=models.DO_NOTHING)
 
     # class date
     date = models.DateField(editable=False)
 
     # course (eg. Programming, Artificial Intelligence)
-    course = models.ForeignKey(ClassTypes)
+    course = models.ForeignKey(Courses, on_delete=models.CASCADE)
 
     # class type (eg. Practical Lesson, Conference)
-    class_type = models.ForeignKey(ClassTypes)
+    class_type = models.ForeignKey(ClassTypes, on_delete=models.DO_NOTHING)
 
     # class details (eg. Last Practical Lesson, First Conference)
     details = models.CharField(max_length=255, null=True)
