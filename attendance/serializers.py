@@ -12,22 +12,22 @@ class StudentsSerializer(serializers.ModelSerializer):
 class TeachersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teachers
-        fields = ("name")
+        fields = ("name",)
 
 
 class ClassTypesSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClassTypes
-        fields = ("class_type")
+        fields = ("class_type",)
 
 
 class CoursesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Courses
-        fields = ("course_name")
+        fields = ("course_name",)
 
 
 class AttendancesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendances
-        fields = ("student", "teacher", "date", "course_name", "class_type", "details")
+        fields = ("student", "teacher", "date", "course", "class_type", "details")
