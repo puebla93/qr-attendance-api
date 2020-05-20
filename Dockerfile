@@ -6,13 +6,13 @@ LABEL Javier Puebla "jpuebla1993@gmail.com"
 ENV PYTHONUNBUFFERED 1
 
 # Creating root directory for our project in the container
-RUN mkdir /attendace_service
+RUN mkdir /attendace_api
 
-# Setting the working directory to /attendace_service
-WORKDIR /attendace_service
+# Setting the working directory to /attendace_api
+WORKDIR /attendace_api
 
-# Copy the current directory contents into the container at /attendace_service
-ADD . /attendace_service/
+# Copy the current directory contents into the container at /attendace_api
+ADD . /attendace_api/
 
 # Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt
