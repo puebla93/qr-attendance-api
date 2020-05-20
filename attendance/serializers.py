@@ -3,6 +3,13 @@ from rest_framework import serializers
 from .models import *
 
 
+class TokenSerializer(serializers.Serializer):
+    """
+    This serializer serializes the token data
+    """
+    token = serializers.CharField(max_length=255)
+
+
 class StudentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Students
