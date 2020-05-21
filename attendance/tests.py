@@ -1,6 +1,8 @@
 import datetime
+import json
 import random
 
+from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 from rest_framework.views import status
@@ -57,20 +59,63 @@ class BaseViewTest(APITestCase):
             return Attendances.objects.create(student=student, teacher=teacher, date=date,
                                               course=course, class_type=class_type, details=details)
 
+    def login_client(self, username="", password=""):
+        # get a token from DRF
+        response = self.client.post(
+            reverse('create-token'),
+            data=json.dumps(
+                {
+                    'username': username,
+                    'password': password
+                }
+            ),
+            content_type='application/json'
+        )
+        self.token = response.data['token']
+        # set the token in the header
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.token
+        )
+        self.client.login(username=username, password=password)
+        return self.token
+
+    def setUp(self):
+        # create an admin user
+        self.admin = User.objects.create_superuser(
+            username="jonny",
+            email="jonny@email.com",
+            password="testing",
+            first_name="John",
+            last_name="Doe",
+        )
+        # create a regular user
+        self.user = User.objects.create_user(
+            username="jane",
+            email="jane@email.com",
+            password="testing",
+            first_name="Jane",
+            last_name="Doe",
+        )
+
 
 class GetAllStudentsTest(BaseViewTest):
 
     def setUp(self):
+        super(GetAllStudentsTest, self).setUp()
+
         # add test data
         ids = BaseViewTest.get_random_student_ids(4)
         names = ["John Dow", "Jane Doe", "John Smith", "Jane Smith"]
-        [self.create_student(ids[i], names[i]) for i in range(4)]
+        for i in range(4):
+            self.create_student(ids[i], names[i])
 
     def test_get_all_students(self):
         """
             This test ensures that all students added in the setUp method
             exist when we make a GET request to the students/ endpoint
         """
+
+        self.login_client(self.admin.username, "testing")
 
         # hit the API endpoint
         response = self.client.get(
@@ -82,10 +127,26 @@ class GetAllStudentsTest(BaseViewTest):
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_get_all_students_bad_user(self):
+        """
+            This test ensures that a non admin user can't access to the 
+            students/ endpoint
+        """
+
+        self.login_client(self.user.username, "testing")
+
+        # hit the API endpoint
+        response = self.client.get(
+            reverse("students-all", kwargs={"version": "v1"})
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class GetAllTeachersTest(BaseViewTest):
 
     def setUp(self):
+        super(GetAllTeachersTest, self).setUp()
+
         # add test data
         names = ["John Dow", "Jane Doe", "John Smith", "Jane Smith"]
         [self.create_teacher(names[i]) for i in range(4)]
@@ -95,6 +156,8 @@ class GetAllTeachersTest(BaseViewTest):
             This test ensures that all teachers added in the setUp method
             exist when we make a GET request to the teachers/ endpoint
         """
+
+        self.login_client(self.admin.username, "testing")
 
         # hit the API endpoint
         response = self.client.get(
@@ -106,10 +169,26 @@ class GetAllTeachersTest(BaseViewTest):
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_get_all_teachers_bad_user(self):
+        """
+            This test ensures that a non admin user can't access to the 
+            teachers/ endpoint
+        """
+
+        self.login_client(self.user.username, "testing")
+
+        # hit the API endpoint
+        response = self.client.get(
+            reverse("teachers-all", kwargs={"version": "v1"})
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class GetAllClassTypesTest(BaseViewTest):
 
     def setUp(self):
+        super(GetAllClassTypesTest, self).setUp()
+
         # add test data
         class_types = ["Final Test", "Lab Lesson", "Practical Lesson", "Conference"]
         [self.create_class_type(class_types[i]) for i in range(4)]
@@ -119,6 +198,8 @@ class GetAllClassTypesTest(BaseViewTest):
             This test ensures that all class_types added in the setUp method
             exist when we make a GET request to the class_types/ endpoint
         """
+
+        self.login_client(self.admin.username, "testing")
 
         # hit the API endpoint
         response = self.client.get(
@@ -130,10 +211,25 @@ class GetAllClassTypesTest(BaseViewTest):
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_get_all_class_types_bad_user(self):
+        """
+            This test ensures that a non admin user can't access to the 
+            class_types/ endpoint
+        """
+
+        self.login_client(self.user.username, "testing")
+
+        # hit the API endpoint
+        response = self.client.get(
+            reverse("class_types-all", kwargs={"version": "v1"})
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 class GetAllCoursesTest(BaseViewTest):
 
     def setUp(self):
+        super(GetAllCoursesTest, self).setUp()
+
         # add test data
         course_names = ["Programming", "Artificial Intelligence", "Computer Architecture", "Computer Vision"]
         [self.create_course(course_names[i]) for i in range(4)]
@@ -143,6 +239,8 @@ class GetAllCoursesTest(BaseViewTest):
             This test ensures that all courses added in the setUp method
             exist when we make a GET request to the courses/ endpoint
         """
+
+        self.login_client(self.admin.username, "testing")
 
         # hit the API endpoint
         response = self.client.get(
@@ -154,10 +252,25 @@ class GetAllCoursesTest(BaseViewTest):
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_get_all_courses_bad_user(self):
+        """
+            This test ensures that a non admin user can't access to the 
+            courses/ endpoint
+        """
+
+        self.login_client(self.user.username, "testing")
+
+        # hit the API endpoint
+        response = self.client.get(
+            reverse("courses-all", kwargs={"version": "v1"})
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 class GetAllAttendancesTest(BaseViewTest):
 
     def setUp(self):
+        super(GetAllAttendancesTest, self).setUp()
+
         # add test data
         ids = BaseViewTest.get_random_student_ids(4)
         names = ["John Dow", "Jane Doe", "John Smith", "Jane Smith"]
@@ -181,6 +294,8 @@ class GetAllAttendancesTest(BaseViewTest):
             exist when we make a GET request to the attendances/ endpoint
         """
 
+        self.login_client(self.user.username, "testing")
+
         # hit the API endpoint
         response = self.client.get(
             reverse("attendances-all", kwargs={"version": "v1"})
@@ -190,3 +305,37 @@ class GetAllAttendancesTest(BaseViewTest):
         serialized = AttendancesSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class AuthLoginUserTest(BaseViewTest):
+    """
+        Tests for the auth/login/ endpoint
+    """
+
+    def login_a_user(self, username="", password=""):
+        url = reverse(
+            "auth-login",
+            kwargs={
+                "version": "v1"
+            }
+        )
+        return self.client.post(
+            url,
+            data=json.dumps({
+                "username": username,
+                "password": password
+            }),
+            content_type="application/json"
+        )
+
+    def test_login_user_with_valid_credentials(self):
+        # test login with valid credentials
+        response = self.login_a_user(self.user.username, "testing")
+        # assert token key exists
+        self.assertIn("token", response.data)
+        # assert status code is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # test login with invalid credentials
+        response = self.login_a_user("anonymous", "pass")
+        # assert status code is 401 UNAUTHORIZED
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
