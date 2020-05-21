@@ -7,6 +7,7 @@ from rest_framework_jwt.settings import api_settings
 
 from .models import *
 from .serializers import *
+from .permissions import *
 
 # Get the JWT settings
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -99,7 +100,7 @@ class ListClassTypesView(generics.ListAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (permissions.IsAdminUser|ReadOnly,)
 
 
 class ListCoursesView(generics.ListAPIView):
@@ -109,7 +110,7 @@ class ListCoursesView(generics.ListAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (permissions.IsAdminUser|ReadOnly,)
 
 
 class ListAttendancesView(generics.ListAPIView):
