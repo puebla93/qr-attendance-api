@@ -225,6 +225,7 @@ class GetAllClassTypesTest(BaseViewTest):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+
 class GetAllCoursesTest(BaseViewTest):
 
     def setUp(self):
@@ -265,6 +266,7 @@ class GetAllCoursesTest(BaseViewTest):
             reverse("courses-all", kwargs={"version": "v1"})
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class GetAllAttendancesTest(BaseViewTest):
 
@@ -335,6 +337,8 @@ class AuthLoginUserTest(BaseViewTest):
         self.assertIn("token", response.data)
         # assert status code is 200 OK
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_login_user_with_invalid_credentials(self):
         # test login with invalid credentials
         response = self.login_a_user("anonymous", "pass")
         # assert status code is 401 UNAUTHORIZED
