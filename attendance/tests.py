@@ -102,6 +102,9 @@ class BaseViewTest(APITestCase):
 
 
 class GetAllStudentsTest(BaseViewTest):
+    """
+        Tests for the students/ endpoint
+    """
 
     def setUp(self):
         super(GetAllStudentsTest, self).setUp()
@@ -146,6 +149,9 @@ class GetAllStudentsTest(BaseViewTest):
 
 
 class GetAllTeachersTest(BaseViewTest):
+    """
+        Tests for the teachers/ endpoint
+    """
 
     def setUp(self):
         super(GetAllTeachersTest, self).setUp()
@@ -188,6 +194,9 @@ class GetAllTeachersTest(BaseViewTest):
 
 
 class GetAllClassTypesTest(BaseViewTest):
+    """
+        Tests for the class_types/ endpoint
+    """
 
     def setUp(self):
         super(GetAllClassTypesTest, self).setUp()
@@ -230,6 +239,9 @@ class GetAllClassTypesTest(BaseViewTest):
 
 
 class GetAllCoursesTest(BaseViewTest):
+    """
+        Tests for the courses/ endpoint
+    """
 
     def setUp(self):
         super(GetAllCoursesTest, self).setUp()
@@ -272,6 +284,9 @@ class GetAllCoursesTest(BaseViewTest):
 
 
 class GetAllAttendancesTest(BaseViewTest):
+    """
+        Tests for the attendances/ endpoint
+    """
 
     def setUp(self):
         super(GetAllAttendancesTest, self).setUp()
