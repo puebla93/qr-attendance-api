@@ -1,6 +1,8 @@
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from rest_framework import generics, permissions
+from rest_framework.response import Response
+from rest_framework.views import status
 from rest_framework_jwt.settings import api_settings
 
 from .models import *
@@ -47,6 +49,7 @@ class ListStudentsView(generics.ListAPIView):
 
     queryset = Students.objects.all()
     serializer_class = StudentsSerializer
+    permission_classes = (permissions.IsAdminUser,)
 
 
 class ListTeachersView(generics.ListAPIView):
@@ -56,6 +59,7 @@ class ListTeachersView(generics.ListAPIView):
 
     queryset = Teachers.objects.all()
     serializer_class = TeachersSerializer
+    permission_classes = (permissions.IsAdminUser,)
 
 
 class ListClassTypesView(generics.ListAPIView):
@@ -65,6 +69,7 @@ class ListClassTypesView(generics.ListAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
+    permission_classes = (permissions.IsAdminUser,)
 
 
 class ListCoursesView(generics.ListAPIView):
@@ -74,6 +79,7 @@ class ListCoursesView(generics.ListAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
+    permission_classes = (permissions.IsAdminUser,)
 
 
 class ListAttendancesView(generics.ListAPIView):
@@ -83,3 +89,4 @@ class ListAttendancesView(generics.ListAPIView):
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
+    permission_classes = (permissions.IsAuthenticated,)
