@@ -63,9 +63,15 @@ class BaseViewTest(APITestCase):
                                               course=course, class_type=class_type, details=details)
 
     def login_client(self, username="", password=""):
-        # get a token from DRF
+        url = reverse(
+            "auth-login",
+            kwargs={
+                "version": "v1"
+            }
+        )
+        # get a token
         response = self.client.post(
-            reverse('create-token'),
+            url,
             data=json.dumps(
                 {
                     'username': username,
