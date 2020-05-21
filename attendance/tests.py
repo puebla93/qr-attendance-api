@@ -28,7 +28,10 @@ class BaseViewTest(APITestCase):
         for _ in range(k):
             random_number_of_days = random.randrange(days_between_dates)
             random_date = start_date + datetime.timedelta(days=random_number_of_days)
-            ids.append(str(random_date.year % 100)+str(random_date.month)+str(random_date.day))
+            year = str(random_date.year)[2:]
+            month = '0'+str(random_date.month) if random_date.month < 10 else str(random_date.month)
+            day = '0'+str(random_date.day) if random_date.day < 10 else str(random_date.day)
+            ids.append(year + month + day)
 
         return ids
 
