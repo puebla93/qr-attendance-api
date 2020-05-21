@@ -17,3 +17,12 @@ class IsTeacherUser(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated)
+
+
+class IsStudentAssistantUser(BasePermission):
+    """
+        Allows access only to student assistant users.
+    """
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
