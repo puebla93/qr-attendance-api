@@ -42,6 +42,36 @@ class LoginView(generics.CreateAPIView):
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
+class RegisterUsersView(generics.CreateAPIView):
+    """
+    POST auth/register/
+    """
+
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get("username", "")
+        password = request.data.get("password", "")
+        email = request.data.get("email", "")
+        first_name = request.data.get("first_name", "")
+        last_name = request.data.get("last_name", "")
+        if not username and not password and not email:
+            return Response(
+                data={
+                    "message": "username, password and email is required to register a user"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        new_user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        return Response(status=status.HTTP_201_CREATED)
+
+
 class ListStudentsView(generics.ListAPIView):
     """
         Provides a get method handler.
