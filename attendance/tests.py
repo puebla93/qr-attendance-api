@@ -9,6 +9,7 @@ from rest_framework.views import status
 
 from .models import *
 from .serializers import *
+from .util import is_valid_student_id, is_valid_teacher_email
 
 # tests for views
 
@@ -37,10 +38,10 @@ class BaseViewTest(APITestCase):
 
     @staticmethod
     def create_student(student_id="", student_name=""):
-        if Users.is_valid_student_id(student_id) and student_name != "":
+        if is_valid_student_id(student_id) and student_name != "":
             first_name = student_name.split()[0]
             last_name = student_name.split()[1:]
-            return Users.objects.create(
+            return User.objects.create(
                 username=student_id,
                 password=student_id,
                 first_name=first_name,
@@ -49,10 +50,10 @@ class BaseViewTest(APITestCase):
 
     @staticmethod
     def create_teacher(teacher_email="", teacher_name=""):
-        if Users.is_valid_teacher_email(teacher_email) and teacher_name != "":
+        if is_valid_teacher_email(teacher_email) and teacher_name != "":
             first_name = teacher_name.split()[0]
             last_name = teacher_name.split()[1:]
-            return Users.objects.create(
+            return User.objects.create(
                 username=teacher_email,
                 email=teacher_email,
                 password="password",
