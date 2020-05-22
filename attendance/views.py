@@ -85,11 +85,12 @@ class ListStudentsView(generics.ListAPIView):
 
 class StudentsDetailView(generics.RetrieveAPIView):
     """
-        GET class_types/:id/
+        GET students/:id/
     """
 
     queryset = Students.objects.all()
     serializer_class = StudentsSerializer
+    permission_classes = (IsTeacherUser|IsStudentAssistantUser,)
 
     def get(self, request, *args, **kwargs):
         try:
@@ -133,6 +134,7 @@ class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
+    permission_classes = (IsTeacherUser|ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
@@ -182,6 +184,57 @@ class ListCoursesView(generics.ListAPIView):
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
     permission_classes = (IsTeacherUser|IsStudentAssistantUser|ReadOnly,)
+
+
+class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+        GET courses/:name/
+        PUT courses/:name/
+        DELETE courses/:name/
+    """
+
+    queryset = Courses.objects.all()
+    serializer_class = CoursesSerializer
+    permission_classes = (IsTeacherUser|ReadOnly,)
+
+    def get(self, request, *args, **kwargs):
+        try:
+            course = self.queryset.get(course_name=kwargs["name"])
+            return Response(CoursesSerializer(course).data)
+        except Courses.DoesNotExist:
+            return Response(
+                data={
+                    "message": "Course with name: {} does not exist".format(kwargs["name"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def put(self, request, *args, **kwargs):
+        try:
+            course = self.queryset.get(course_name=kwargs["name"])
+            serializer = CoursesSerializer()
+            updated_course = serializer.update(course, request.data)
+            return Response(CoursesSerializer(updated_course).data)
+        except Courses.DoesNotExist:
+            return Response(
+                data={
+                    "message": "Course with name: {} does not exist".format(kwargs["name"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            course = self.queryset.get(course_name=kwargs["name"])
+            course.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Courses.DoesNotExist:
+            return Response(
+                data={
+                    "message": "Course with name: {} does not exist".format(kwargs["name"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class ListAttendancesView(generics.ListAPIView):
