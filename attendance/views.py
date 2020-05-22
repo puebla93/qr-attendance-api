@@ -245,3 +245,26 @@ class ListAttendancesView(generics.ListAPIView):
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
+
+class AttendancesDetailView(generics.RetrieveAPIView):
+    """
+        GET attendances/:id/
+    """
+
+    queryset = Attendances.objects.all()
+    serializer_class = AttendancesSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        try:
+            attendance = self.queryset.get(id=kwargs["id"])
+            return Response(AttendancesSerializer(attendance).data)
+        except Attendances.DoesNotExist:
+            return Response(
+                data={
+                    "message": "Attendance with id: {} does not exist".format(kwargs["id"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
