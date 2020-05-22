@@ -285,7 +285,6 @@ class CreateAttendancesView(generics.CreateAPIView):
         )
 
 
-
 class AttendancesDetailView(generics.RetrieveAPIView):
     """
         GET attendances/:id/
