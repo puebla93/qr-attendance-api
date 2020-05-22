@@ -5,9 +5,6 @@ from django.contrib.auth.models import User
 class Users(User):
     TEACHERS_EMAIL_ADDRESS = '@matcom.uh.cu'
 
-    # Read about user permissions
-    # role = models.CharField()
-
     @staticmethod
     def is_valid_teacher_email(teacher_email):
         return teacher_email.endswith(Users.TEACHERS_EMAIL_ADDRESS)
