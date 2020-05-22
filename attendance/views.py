@@ -74,48 +74,6 @@ class RegisterUsersView(generics.CreateAPIView):
         return Response(status=status.HTTP_201_CREATED)
 
 
-class ListStudentsView(generics.ListAPIView):
-    """
-        Provides a get method handler.
-    """
-
-    queryset = Students.objects.all()
-    serializer_class = StudentsSerializer
-    permission_classes = (IsTeacherUser|IsStudentAssistantUser,)
-
-
-class StudentsDetailView(generics.RetrieveAPIView):
-    """
-        GET students/:id/
-    """
-
-    queryset = Students.objects.all()
-    serializer_class = StudentsSerializer
-    permission_classes = (IsTeacherUser|IsStudentAssistantUser,)
-
-    def get(self, request, *args, **kwargs):
-        try:
-            student = self.queryset.get(id=kwargs["id"])
-            return Response(StudentsSerializer(student).data)
-        except ClassTypes.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Student with id: {} does not exist".format(kwargs["id"])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-
-class ListTeachersView(generics.ListAPIView):
-    """
-        Provides a get method handler.
-    """
-
-    queryset = Teachers.objects.all()
-    serializer_class = TeachersSerializer
-    permission_classes = (IsTeacherUser,)
-
-
 class ListClassTypesView(generics.ListAPIView):
     """
         Provides a get method handler.
