@@ -122,6 +122,49 @@ class BaseViewTest(APITestCase):
             last_name="Doe",
         )
 
+    def make_a_request(self, url_name, kind="get", data=None, **kwargs):
+        """
+            Make a request to url_name endpoint
+        :param kind: HTTP VERB
+        :return:
+        """
+
+        kwargs.update({"version": "v1"})
+        if kind == "get":
+            return self.client.get(
+                reverse(
+                    url_name,
+                    kwargs=kwargs
+                )
+            )
+        elif kind == "post":
+            return self.client.post(
+                reverse(
+                   url_name,
+                    kwargs=kwargs
+                ),
+                data=json.dumps(kwargs["data"]),
+                content_type='application/json'
+            )
+        elif kind == "put":
+            return self.client.put(
+                reverse(
+                    url_name,
+                    kwargs=kwargs
+                ),
+                data=json.dumps(data),
+                content_type='application/json'
+            )
+        elif kind == "delete":
+            return self.client.delete(
+                reverse(
+                   url_name,
+                    kwargs=kwargs
+                )
+            )
+        else:
+            return None
+
 
 class ClassTypesViewTest(BaseViewTest):
     """
@@ -136,46 +179,6 @@ class ClassTypesViewTest(BaseViewTest):
         # add test data
         [self.create_class_type(ClassTypesViewTest.CLASS_TYPES[i]) for i in range(4)]
 
-    def fetch_a_class_type(self, class_type):
-        return self.client.get(
-            reverse(
-                "class_types-detail",
-                kwargs={
-                    "version": "v1",
-                    "type": class_type
-                }
-            )
-        )
-
-    def update_a_class_type(self, class_type, data):
-        """
-            Make a put request to update a class_type
-            :return:
-        """
-
-        return self.client.put(
-            reverse(
-                "class_types-detail",
-                kwargs={
-                    "version": "v1",
-                    "type": class_type
-                }
-            ),
-            data=json.dumps(data),
-            content_type='application/json'
-        )
-
-    def delete_a_class_type(self, class_type):
-        return self.client.delete(
-            reverse(
-                "class_types-detail",
-                kwargs={
-                    "version": "v1",
-                    "type": class_type
-                }
-            )
-        )
-
     def test_get_all_class_types(self):
         """
             This test ensures that all class_types added in the setUp method
@@ -183,9 +186,7 @@ class ClassTypesViewTest(BaseViewTest):
         """
 
         # hit the API endpoint
-        response = self.client.get(
-            reverse("class_types-all", kwargs={"version": "v1"})
-        )
+        response = self.make_a_request("class_types-all")
         # fetch the data from db
         expected = ClassTypes.objects.all()
         serialized = ClassTypesSerializer(expected, many=True)
@@ -194,11 +195,12 @@ class ClassTypesViewTest(BaseViewTest):
 
     def test_get_a_class_type_that_does_not_exist(self):
         """
-        This test try to get a class type that doesn't exists and make assertions
+            This test try to get a class type that doesn't exists and make assertions
         """
 
         # test with a class type that does not exist
-        response = self.fetch_a_class_type("Invalid class type")
+        class_type = "Invalid class type"
+        response = self.make_a_request("class_types-detail", type=class_type)
         self.assertEqual(
             response.data["message"],
             "ClassType: \"Invalid class type\" does not exist"
@@ -213,7 +215,7 @@ class ClassTypesViewTest(BaseViewTest):
 
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
-        response = self.fetch_a_class_type(class_type)
+        response = self.make_a_request("class_types-detail", type=class_type)
         # fetch the data from db
         expected = ClassTypes.objects.get(class_type=class_type)
         serialized = ClassTypesSerializer(expected)
@@ -228,15 +230,15 @@ class ClassTypesViewTest(BaseViewTest):
         # hit the API endpoint no logged user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
         new_class_type = "New class type no logged user"
-        response = self.update_a_class_type(
-            class_type=class_type,
-            data={"class_type": new_class_type}
+        response = self.make_a_request("class_types-detail", kind="put",
+            data={"class_type": new_class_type},
+            type=class_type
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_update_a_class_type_no_teacher_user(self):
         """
-            This test ensures that a no teacher user can't update a class_type
+            This test ensures that a not teacher user can't update a class_type
         """
 
         self.login_client(self.user.username, 'testing')
@@ -244,9 +246,9 @@ class ClassTypesViewTest(BaseViewTest):
         # hit the API endpoint unauthorized user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
         new_class_type = "New class type unauthorized user"
-        response = self.update_a_class_type(
-            class_type=class_type,
-            data={"class_type": new_class_type}
+        response = self.make_a_request("class_types-detail", kind="put",
+            data={"class_type": new_class_type},
+            type=class_type
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -259,9 +261,9 @@ class ClassTypesViewTest(BaseViewTest):
 
         # test with invalid data
         class_type = "Class type doesn't exist"
-        response = self.update_a_class_type(
-            class_type=class_type,
-            data={"class_type": "Any Value"}
+        response = self.make_a_request("class_types-detail", kind="put",
+            data={"class_type": "Any Value"},
+            type=class_type
         )
         self.assertEqual(
             response.data["message"],
@@ -279,9 +281,9 @@ class ClassTypesViewTest(BaseViewTest):
         # hit the API endpoint valid user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
         new_class_type = "New class type"
-        response = self.update_a_class_type(
-            class_type=class_type,
-            data={"class_type": new_class_type}
+        response = self.make_a_request("class_types-detail", kind="put",
+            data={"class_type": new_class_type},
+            type=class_type
         )
         self.assertEqual(response.data, {"class_type": new_class_type})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -293,19 +295,23 @@ class ClassTypesViewTest(BaseViewTest):
 
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
-        response = self.delete_a_class_type(class_type)
+        response = self.make_a_request("class_types-detail", kind="delete",
+            type=class_type
+        )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_delete_a_class_type_no_teacher_user(self):
         """
-            This test ensures that a no teacher user can't delete a class_type
+            This test ensures that a not teacher user can't delete a class_type
         """
 
         self.login_client(self.user.username, 'testing')
 
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
-        response = self.delete_a_class_type(class_type)
+        response = self.make_a_request("class_types-detail", kind="delete",
+            type=class_type
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_a_class_type_that_does_not_exist(self):
@@ -317,7 +323,9 @@ class ClassTypesViewTest(BaseViewTest):
 
         # test with invalid data
         class_type = "Class type doesn't exist"
-        response = self.delete_a_class_type(class_type)
+        response = self.make_a_request("class_types-detail", kind="delete",
+            type=class_type
+        )
         self.assertEqual(
             response.data["message"],
             "ClassType: {} does not exist".format(class_type)
@@ -332,21 +340,24 @@ class ClassTypesViewTest(BaseViewTest):
         self.login_client(self.admin.username, 'testing')
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
-        response = self.delete_a_class_type(class_type)
+        response = self.make_a_request("class_types-detail", kind="delete",
+            type=class_type
+        )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
-class GetAllCoursesTest(BaseViewTest):
+class CoursesViewTest(BaseViewTest):
     """
-        Tests for the courses/ endpoint
+        Tests for the courses/ endpoints
     """
+
+    COURSE_NAMES = ["Programming", "Artificial Intelligence", "Computer Architecture", "Computer Vision"]
 
     def setUp(self):
-        super(GetAllCoursesTest, self).setUp()
+        super(CoursesViewTest, self).setUp()
 
         # add test data
-        course_names = ["Programming", "Artificial Intelligence", "Computer Architecture", "Computer Vision"]
-        [self.create_course(course_names[i]) for i in range(4)]
+        [self.create_course(CoursesViewTest.COURSE_NAMES[i]) for i in range(4)]
 
     def test_get_all_courses(self):
         """
@@ -355,14 +366,164 @@ class GetAllCoursesTest(BaseViewTest):
         """
 
         # hit the API endpoint
-        response = self.client.get(
-            reverse("courses-all", kwargs={"version": "v1"})
-        )
+        response = self.make_a_request("courses-all")
         # fetch the data from db
         expected = Courses.objects.all()
         serialized = CoursesSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_a_course_that_does_not_exist(self):
+        """
+            This test try to get a course that doesn't exists and make assertions
+        """
+
+        # test with a course that does not exist
+        course = "Invalid course"
+        response = self.make_a_request("courses-detail", name=course)
+        self.assertEqual(
+            response.data["message"],
+            "Course with name: \"Invalid course\" does not exist"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_a_course(self):
+        """
+            This test ensures that a single course of a given type is
+            returned
+        """
+
+        # hit the API endpoint
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        response = self.make_a_request("courses-detail", name=course_name)
+        # fetch the data from db
+        expected = Courses.objects.get(course_name=course_name)
+        serialized = CoursesSerializer(expected)
+        self.assertEqual(response.data, serialized.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_a_course_no_logged_user(self):
+        """
+            This test ensures that to update a course the user need to be logged
+        """
+
+        # hit the API endpoint no logged user
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        new_course_name = "New course no logged user"
+        response = self.make_a_request("courses-detail", kind="put",
+            data={"course_name": new_course_name},
+            name=course_name
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_update_a_course_no_teacher_user(self):
+        """
+            This test ensures that a not teacher user can't update a course
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        # hit the API endpoint unauthorized user
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        new_course_name = "New course unauthorized user"
+        response = self.make_a_request("courses-detail", kind="put",
+            data={"course_name": new_course_name},
+            name=course_name
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_a_course_that_does_not_exist(self):
+        """
+            This test try to update a course that doesn't exists and make assertions
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # test with invalid data
+        course_name = "Course doesn't exist"
+        response = self.make_a_request("courses-detail", kind="put",
+            data={"course_name": "Any Value"},
+            name=course_name
+        )
+        self.assertEqual(
+            response.data["message"],
+            "Course with name: \"{}\" does not exist".format(course_name)
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_a_course(self):
+        """
+            This test ensures that a single course can be updated
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint valid user
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        new_course_name = "New course"
+        response = self.make_a_request("courses-detail", kind="put",
+            data={"course_name": new_course_name},
+            name=course_name
+        )
+        self.assertEqual(response.data, {"course_name": new_course_name})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_a_course_no_logged_user(self):
+        """
+            This test ensures that to delete a course the user need to be logged
+        """
+
+        # hit the API endpoint
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        response = self.make_a_request("courses-detail", kind="delete",
+            name=course_name
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_a_course_no_teacher_user(self):
+        """
+            This test ensures that a no teacher user can't delete a course
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        # hit the API endpoint
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        response = self.make_a_request("courses-detail", kind="delete",
+            name=course_name
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_a_course_that_does_not_exist(self):
+        """
+            This test try to delet a course that doesn't exists and make assertions
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # test with invalid data
+        course_name = "Course doesn't exist"
+        response = self.make_a_request("courses-detail", kind="delete",
+            name=course_name
+        )
+        self.assertEqual(
+            response.data["message"],
+            "Course with name: \"{}\" does not exist".format(course_name)
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_a_course(self):
+        """
+            This test ensures that a course of given type can be deleted
+        """
+
+        self.login_client(self.admin.username, 'testing')
+        # hit the API endpoint
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        response = self.make_a_request("courses-detail", kind="delete",
+            name=course_name
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class GetAllAttendancesTest(BaseViewTest):

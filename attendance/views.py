@@ -151,7 +151,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (IsTeacherUser|ReadOnly,)
+    permission_classes = (permissions.IsAdminUser|ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
@@ -160,7 +160,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
         except Courses.DoesNotExist:
             return Response(
                 data={
-                    "message": "Course with name: {} does not exist".format(kwargs["name"])
+                    "message": "Course with name: \"{}\" does not exist".format(kwargs["name"])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
@@ -174,7 +174,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
         except Courses.DoesNotExist:
             return Response(
                 data={
-                    "message": "Course with name: {} does not exist".format(kwargs["name"])
+                    "message": "Course with name: \"{}\" does not exist".format(kwargs["name"])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
@@ -187,7 +187,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
         except Courses.DoesNotExist:
             return Response(
                 data={
-                    "message": "Course with name: {} does not exist".format(kwargs["name"])
+                    "message": "Course with name: \"{}\" does not exist".format(kwargs["name"])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
