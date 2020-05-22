@@ -80,7 +80,7 @@ class ListStudentsView(generics.ListAPIView):
 
     queryset = Students.objects.all()
     serializer_class = StudentsSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (IsTeacherUser|IsStudentAssistantUser,)
 
 
 class ListTeachersView(generics.ListAPIView):
@@ -90,7 +90,7 @@ class ListTeachersView(generics.ListAPIView):
 
     queryset = Teachers.objects.all()
     serializer_class = TeachersSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (IsTeacherUser,)
 
 
 class ListClassTypesView(generics.ListAPIView):
@@ -100,7 +100,7 @@ class ListClassTypesView(generics.ListAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
-    permission_classes = (permissions.IsAdminUser|ReadOnly,)
+    permission_classes = (IsTeacherUser|IsStudentAssistantUser|ReadOnly,)
 
 
 class ListCoursesView(generics.ListAPIView):
@@ -110,7 +110,7 @@ class ListCoursesView(generics.ListAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (permissions.IsAdminUser|ReadOnly,)
+    permission_classes = (IsTeacherUser|IsStudentAssistantUser|ReadOnly,)
 
 
 class ListAttendancesView(generics.ListAPIView):
