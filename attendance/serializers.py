@@ -5,21 +5,9 @@ from .models import *
 
 class TokenSerializer(serializers.Serializer):
     """
-    This serializer serializes the token data
+        This serializer serializes the token data
     """
     token = serializers.CharField(max_length=255)
-
-
-class StudentsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Students
-        fields = ("id", "name")
-
-
-class TeachersSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Teachers
-        fields = ("name",)
 
 
 class ClassTypesSerializer(serializers.ModelSerializer):
