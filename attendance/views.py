@@ -103,6 +103,56 @@ class ListClassTypesView(generics.ListAPIView):
     permission_classes = (IsTeacherUser|IsStudentAssistantUser|ReadOnly,)
 
 
+class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+        GET class_types/:id/
+        PUT class_types/:id/
+        DELETE class_types/:id/
+    """
+
+    queryset = ClassTypes.objects.all()
+    serializer_class = ClassTypesSerializer
+
+    def get(self, request, *args, **kwargs):
+        try:
+            class_type = self.queryset.get(class_type=kwargs["class_type"])
+            return Response(ClassTypesSerializer(class_type).data)
+        except ClassTypes.DoesNotExist:
+            return Response(
+                data={
+                    "message": "ClassType with id: {} does not exist".format(kwargs["class_type"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def put(self, request, *args, **kwargs):
+        try:
+            class_type = self.queryset.get(class_type=kwargs["class_type"])
+            serializer = ClassTypesSerializer()
+            updated_class_type = serializer.update(class_type, request.data)
+            return Response(ClassTypesSerializer(updated_class_type).data)
+        except ClassTypes.DoesNotExist:
+            return Response(
+                data={
+                    "message": "ClassType with id: {} does not exist".format(kwargs["class_type"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            class_type = self.queryset.get(class_type=kwargs["class_type"])
+            class_type.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ClassTypes.DoesNotExist:
+            return Response(
+                data={
+                    "message": "ClassType with id: {} does not exist".format(kwargs["class_type"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
 class ListCoursesView(generics.ListAPIView):
     """
         Provides a get method handler.
