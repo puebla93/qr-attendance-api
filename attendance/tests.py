@@ -37,13 +37,28 @@ class BaseViewTest(APITestCase):
 
     @staticmethod
     def create_student(student_id="", student_name=""):
-        if Students.valid_id(student_id) and student_name != "":
-            return Students.objects.create(id=student_id, name=student_name)
+        if Users.is_valid_student_id(student_id) and student_name != "":
+            first_name = student_name.split()[0]
+            last_name = student_name.split()[1:]
+            return Users.objects.create(
+                username=student_id,
+                password=student_id,
+                first_name=first_name,
+                last_name=last_name
+            )
 
     @staticmethod
-    def create_teacher(teacher_name=""):
-        if teacher_name != "":
-            return Teachers.objects.create(name=teacher_name)
+    def create_teacher(teacher_email="", teacher_name=""):
+        if Users.is_valid_teacher_email(teacher_email) and teacher_name != "":
+            first_name = teacher_name.split()[0]
+            last_name = teacher_name.split()[1:]
+            return Users.objects.create(
+                username=teacher_email,
+                email=teacher_email,
+                password="password",
+                first_name=first_name,
+                last_name=last_name
+            )
 
     @staticmethod
     def create_class_type(class_type=""):
@@ -107,98 +122,6 @@ class BaseViewTest(APITestCase):
         )
 
 
-class GetAllStudentsTest(BaseViewTest):
-    """
-        Tests for the students/ endpoint
-    """
-
-    def setUp(self):
-        super(GetAllStudentsTest, self).setUp()
-
-        # add test data
-        ids = BaseViewTest.get_random_student_ids(4)
-        names = ["John Dow", "Jane Doe", "John Smith", "Jane Smith"]
-        for i in range(4):
-            self.create_student(ids[i], names[i])
-
-    def test_get_all_students(self):
-        """
-            This test ensures that all students added in the setUp method
-            exist when we make a GET request to the students/ endpoint
-        """
-
-        self.login_client(self.admin.username, "testing")
-
-        # hit the API endpoint
-        response = self.client.get(
-            reverse("students-all", kwargs={"version": "v1"})
-        )
-        # fetch the data from db
-        expected = Students.objects.all()
-        serialized = StudentsSerializer(expected, many=True)
-        self.assertEqual(response.data, serialized.data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_get_all_students_bad_user(self):
-        """
-            This test ensures that a non admin user can't access to the 
-            students/ endpoint
-        """
-
-        self.login_client(self.user.username, "testing")
-
-        # hit the API endpoint
-        response = self.client.get(
-            reverse("students-all", kwargs={"version": "v1"})
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-
-class GetAllTeachersTest(BaseViewTest):
-    """
-        Tests for the teachers/ endpoint
-    """
-
-    def setUp(self):
-        super(GetAllTeachersTest, self).setUp()
-
-        # add test data
-        names = ["John Dow", "Jane Doe", "John Smith", "Jane Smith"]
-        [self.create_teacher(names[i]) for i in range(4)]
-
-    def test_get_all_teachers(self):
-        """
-            This test ensures that all teachers added in the setUp method
-            exist when we make a GET request to the teachers/ endpoint
-        """
-
-        self.login_client(self.admin.username, "testing")
-
-        # hit the API endpoint
-        response = self.client.get(
-            reverse("teachers-all", kwargs={"version": "v1"})
-        )
-        # fetch the data from db
-        expected = Teachers.objects.all()
-        serialized = TeachersSerializer(expected, many=True)
-        self.assertEqual(response.data, serialized.data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_get_all_teachers_bad_user(self):
-        """
-            This test ensures that a non admin user can't access to the 
-            teachers/ endpoint
-        """
-
-        self.login_client(self.user.username, "testing")
-
-        # hit the API endpoint
-        response = self.client.get(
-            reverse("teachers-all", kwargs={"version": "v1"})
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-
 class GetAllClassTypesTest(BaseViewTest):
     """
         Tests for the class_types/ endpoint
@@ -217,8 +140,6 @@ class GetAllClassTypesTest(BaseViewTest):
             exist when we make a GET request to the class_types/ endpoint
         """
 
-        self.login_client(self.admin.username, "testing")
-
         # hit the API endpoint
         response = self.client.get(
             reverse("class_types-all", kwargs={"version": "v1"})
@@ -228,20 +149,6 @@ class GetAllClassTypesTest(BaseViewTest):
         serialized = ClassTypesSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_get_all_class_types_bad_user(self):
-        """
-            This test ensures that a non admin user can't access to the 
-            class_types/ endpoint
-        """
-
-        self.login_client(self.user.username, "testing")
-
-        # hit the API endpoint
-        response = self.client.get(
-            reverse("class_types-all", kwargs={"version": "v1"})
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class GetAllCoursesTest(BaseViewTest):
@@ -262,8 +169,6 @@ class GetAllCoursesTest(BaseViewTest):
             exist when we make a GET request to the courses/ endpoint
         """
 
-        self.login_client(self.admin.username, "testing")
-
         # hit the API endpoint
         response = self.client.get(
             reverse("courses-all", kwargs={"version": "v1"})
@@ -273,20 +178,6 @@ class GetAllCoursesTest(BaseViewTest):
         serialized = CoursesSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_get_all_courses_bad_user(self):
-        """
-            This test ensures that a non admin user can't access to the 
-            courses/ endpoint
-        """
-
-        self.login_client(self.user.username, "testing")
-
-        # hit the API endpoint
-        response = self.client.get(
-            reverse("courses-all", kwargs={"version": "v1"})
-        )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class GetAllAttendancesTest(BaseViewTest):
@@ -301,13 +192,15 @@ class GetAllAttendancesTest(BaseViewTest):
         ids = BaseViewTest.get_random_student_ids(4)
         names = ["John Dow", "Jane Doe", "John Smith", "Jane Smith"]
         students = [self.create_student(ids[i], names[i]) for i in range(4)]
-        teachers = [self.create_teacher(names[i]) for i in range(4)]
+
+        emails = [name.lower().split()[0]+"."+name.lower().split()[1]+"@matcom.uh.cu" for name in names]
+        teachers = [self.create_teacher(emails[i], names[i]) for i in range(4)]
 
         course_names = ["Programming", "Artificial Intelligence", "Computer Architecture", "Computer Vision"]
-        courses = [self.create_course(course_names[i]) for i in range(4)]
+        courses = [self.create_course(course_name) for course_name in course_names]
 
         class_types = ["Final Test", "Lab Lesson", "Practical Lesson", "Conference"]
-        class_types = [self.create_class_type(class_types[i]) for i in range(4)]
+        class_types = [self.create_class_type(class_type) for class_type in class_types]
 
         dates = [datetime.datetime.now() - datetime.timedelta(days=days) for days in range(4)]
         details = ["", "Lesson Before Final Test", "Last Practical Lesson", "First Conference"]
