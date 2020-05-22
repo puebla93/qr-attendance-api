@@ -8,6 +8,7 @@ from rest_framework_jwt.settings import api_settings
 from .models import *
 from .serializers import *
 from .permissions import *
+from .decorators import *
 
 # Get the JWT settings
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -122,14 +123,13 @@ class ListClassTypesView(generics.ListAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
-    permission_classes = (IsTeacherUser|IsStudentAssistantUser|ReadOnly,)
 
 
 class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-        GET class_types/:id/
-        PUT class_types/:id/
-        DELETE class_types/:id/
+        GET class_types/:type/
+        PUT class_types/:type/
+        DELETE class_types/:type/
     """
 
     queryset = ClassTypes.objects.all()
@@ -138,39 +138,39 @@ class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            class_type = self.queryset.get(class_type=kwargs["class_type"])
+            class_type = self.queryset.get(class_type=kwargs["type"])
             return Response(ClassTypesSerializer(class_type).data)
         except ClassTypes.DoesNotExist:
             return Response(
                 data={
-                    "message": "ClassType with id: {} does not exist".format(kwargs["class_type"])
+                    "message": "ClassType: {} does not exist".format(kwargs["type"])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
     def put(self, request, *args, **kwargs):
         try:
-            class_type = self.queryset.get(class_type=kwargs["class_type"])
+            class_type = self.queryset.get(class_type=kwargs["type"])
             serializer = ClassTypesSerializer()
             updated_class_type = serializer.update(class_type, request.data)
             return Response(ClassTypesSerializer(updated_class_type).data)
         except ClassTypes.DoesNotExist:
             return Response(
                 data={
-                    "message": "ClassType with id: {} does not exist".format(kwargs["class_type"])
+                    "message": "ClassType: {} does not exist".format(kwargs["type"])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
     def delete(self, request, *args, **kwargs):
         try:
-            class_type = self.queryset.get(class_type=kwargs["class_type"])
+            class_type = self.queryset.get(class_type=kwargs["type"])
             class_type.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except ClassTypes.DoesNotExist:
             return Response(
                 data={
-                    "message": "ClassType with id: {} does not exist".format(kwargs["class_type"])
+                    "message": "ClassType: {} does not exist".format(kwargs["type"])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
@@ -183,7 +183,6 @@ class ListCoursesView(generics.ListAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (IsTeacherUser|IsStudentAssistantUser|ReadOnly,)
 
 
 class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -247,6 +246,46 @@ class ListAttendancesView(generics.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
 
+class CreateAttendancesView(generics.CreateAPIView):
+    """
+        POST attendances/
+    """
+
+    queryset = Attendances.objects.all()
+    serializer_class = AttendancesSerializer
+    permission_classes = (IsTeacherUser|IsStudentAssistantUser,)
+
+    @validate_attendance_request_data
+    def post(self, request, *args, **kwargs):
+        student_id = request.data["student_id"]
+        student_name = request.data["student_name"]
+        student = self.get_or_create_student(student_id, student_name)
+
+        teacher = None
+
+        course_name = request.data["course_name"]
+        course = self.get_or_cretate_course(course_name)
+        class_type = request.data["class_type"]
+        class_type = self.get_or_cretate_class_type(class_type)
+
+        date = request.data["date"]
+        details = request.data.get("details", "")
+
+        attendance = Attendances.objects.create(
+            student=student,
+            teacher=teacher,
+            course=course,
+            class_type=class_type,
+            date=date,
+            details=details
+        )
+        return Response(
+            data=AttendancesSerializer(attendance).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+
 class AttendancesDetailView(generics.RetrieveAPIView):
     """
         GET attendances/:id/
@@ -267,4 +306,3 @@ class AttendancesDetailView(generics.RetrieveAPIView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
-
