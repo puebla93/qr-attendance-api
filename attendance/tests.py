@@ -123,17 +123,58 @@ class BaseViewTest(APITestCase):
         )
 
 
-class GetAllClassTypesTest(BaseViewTest):
+class ClassTypesViewTest(BaseViewTest):
     """
-        Tests for the class_types/ endpoint
+        Tests for the class_types/ endpoints
     """
+
+    CLASS_TYPES = ["Final Test", "Lab Lesson", "Practical Lesson", "Conference"]
 
     def setUp(self):
-        super(GetAllClassTypesTest, self).setUp()
+        super(ClassTypesViewTest, self).setUp()
 
         # add test data
-        class_types = ["Final Test", "Lab Lesson", "Practical Lesson", "Conference"]
-        [self.create_class_type(class_types[i]) for i in range(4)]
+        [self.create_class_type(ClassTypesViewTest.CLASS_TYPES[i]) for i in range(4)]
+
+    def fetch_a_class_type(self, class_type):
+        return self.client.get(
+            reverse(
+                "class_types-detail",
+                kwargs={
+                    "version": "v1",
+                    "type": class_type
+                }
+            )
+        )
+
+    def update_a_class_type(self, class_type, data):
+        """
+            Make a put request to update a class_type
+            :return:
+        """
+
+        return self.client.put(
+            reverse(
+                "class_types-detail",
+                kwargs={
+                    "version": "v1",
+                    "type": class_type
+                }
+            ),
+            data=json.dumps(data),
+            content_type='application/json'
+        )
+
+    def delete_a_class_type(self, class_type):
+        return self.client.delete(
+            reverse(
+                "class_types-detail",
+                kwargs={
+                    "version": "v1",
+                    "type": class_type
+                }
+            )
+        )
 
     def test_get_all_class_types(self):
         """
@@ -150,6 +191,149 @@ class GetAllClassTypesTest(BaseViewTest):
         serialized = ClassTypesSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_a_class_type_that_does_not_exist(self):
+        """
+        This test try to get a class type that doesn't exists and make assertions
+        """
+
+        # test with a class type that does not exist
+        response = self.fetch_a_class_type("Invalid class type")
+        self.assertEqual(
+            response.data["message"],
+            "ClassType: \"Invalid class type\" does not exist"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_a_class_type(self):
+        """
+            This test ensures that a single class type of a given type is
+            returned
+        """
+
+        # hit the API endpoint
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        response = self.fetch_a_class_type(class_type)
+        # fetch the data from db
+        expected = ClassTypes.objects.get(class_type=class_type)
+        serialized = ClassTypesSerializer(expected)
+        self.assertEqual(response.data, serialized.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_a_class_type_no_logged_user(self):
+        """
+            This test ensures that to update a class_type the user need to be logged
+        """
+
+        # hit the API endpoint no logged user
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        new_class_type = "New class type no logged user"
+        response = self.update_a_class_type(
+            class_type=class_type,
+            data={"class_type": new_class_type}
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_update_a_class_type_no_teacher_user(self):
+        """
+            This test ensures that a no teacher user can't update a class_type
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        # hit the API endpoint unauthorized user
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        new_class_type = "New class type unauthorized user"
+        response = self.update_a_class_type(
+            class_type=class_type,
+            data={"class_type": new_class_type}
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_a_class_type_that_does_not_exist(self):
+        """
+            This test try to update a class type that doesn't exists and make assertions
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # test with invalid data
+        class_type = "Class type doesn't exist"
+        response = self.update_a_class_type(
+            class_type=class_type,
+            data={"class_type": "Any Value"}
+        )
+        self.assertEqual(
+            response.data["message"],
+            "ClassType: {} does not exist".format(class_type)
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_a_class_type(self):
+        """
+            This test ensures that a single class_type can be updated
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint valid user
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        new_class_type = "New class type"
+        response = self.update_a_class_type(
+            class_type=class_type,
+            data={"class_type": new_class_type}
+        )
+        self.assertEqual(response.data, {"class_type": new_class_type})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_a_class_type_no_logged_user(self):
+        """
+            This test ensures that to delete a class_type the user need to be logged
+        """
+
+        # hit the API endpoint
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        response = self.delete_a_class_type(class_type)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_a_class_type_no_teacher_user(self):
+        """
+            This test ensures that a no teacher user can't delete a class_type
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        # hit the API endpoint
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        response = self.delete_a_class_type(class_type)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_a_class_type_that_does_not_exist(self):
+        """
+            This test try to delet a class type that doesn't exists and make assertions
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # test with invalid data
+        class_type = "Class type doesn't exist"
+        response = self.delete_a_class_type(class_type)
+        self.assertEqual(
+            response.data["message"],
+            "ClassType: {} does not exist".format(class_type)
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_a_class_type(self):
+        """
+            This test ensures that a class_type of given type can be deleted
+        """
+
+        self.login_client(self.admin.username, 'testing')
+        # hit the API endpoint
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        response = self.delete_a_class_type(class_type)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class GetAllCoursesTest(BaseViewTest):
@@ -279,7 +463,6 @@ class AuthRegisterUserTest(BaseViewTest):
             url,
             data=json.dumps(
                 {
-                    "username": "new_user",
                     "password": "new_pass",
                     "email": "new_user@mail.com",
                     "first_name": "New",
@@ -290,7 +473,7 @@ class AuthRegisterUserTest(BaseViewTest):
         )
         # assert status code is 201 CREATED
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        user = User.objects.get(username="new_user")
+        user = User.objects.get(username="new_user@mail.com")
         self.assertEqual(user.email, "new_user@mail.com")
         self.assertEqual(user.first_name, "New")
         self.assertEqual(user.last_name, "User")
@@ -306,7 +489,6 @@ class AuthRegisterUserTest(BaseViewTest):
             url,
             data=json.dumps(
                 {
-                    "username": "",
                     "password": "",
                     "email": ""
                 }

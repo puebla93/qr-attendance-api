@@ -52,20 +52,19 @@ class RegisterUsersView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        username = request.data.get("username", "")
-        password = request.data.get("password", "")
         email = request.data.get("email", "")
+        password = request.data.get("password", "")
         first_name = request.data.get("first_name", "")
         last_name = request.data.get("last_name", "")
-        if not username and not password and not email:
+        if not (email and password):
             return Response(
                 data={
-                    "message": "username, password and email is required to register a user"
+                    "message": "email and password is required to register a user"
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
         new_user = User.objects.create_user(
-            username=username,
+            username=email,
             email=email,
             password=password,
             first_name=first_name,
@@ -92,7 +91,7 @@ class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
-    permission_classes = (IsTeacherUser|ReadOnly,)
+    permission_classes = (permissions.IsAdminUser|ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
@@ -101,7 +100,7 @@ class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
         except ClassTypes.DoesNotExist:
             return Response(
                 data={
-                    "message": "ClassType: {} does not exist".format(kwargs["type"])
+                    "message": "ClassType: \"{}\" does not exist".format(kwargs["type"])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
