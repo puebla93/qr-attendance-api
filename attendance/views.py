@@ -197,6 +197,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+    @validate_course_request_data
     def put(self, request, *args, **kwargs):
         try:
             course = self.queryset.get(course_name=kwargs["name"])
