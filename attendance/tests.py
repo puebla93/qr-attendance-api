@@ -32,7 +32,8 @@ class BaseViewTest(APITestCase):
             year = str(random_date.year)[2:]
             month = '0'+str(random_date.month) if random_date.month < 10 else str(random_date.month)
             day = '0'+str(random_date.day) if random_date.day < 10 else str(random_date.day)
-            ids.append(year + month + day)
+            remaining = str(random.randrange(99999))
+            ids.append(year + month + day + remaining)
 
         return ids
 
@@ -74,7 +75,7 @@ class BaseViewTest(APITestCase):
     @staticmethod
     def create_attendance(
             student=None, teacher=None, date=None, course=None, class_type=None, details=""):
-        if student and teacher and date and course and class_type and details != "":
+        if student and teacher and date and course and class_type:
             return Attendances.objects.create(student=student, teacher=teacher, date=date,
                                               course=course, class_type=class_type, details=details)
 
@@ -122,7 +123,7 @@ class BaseViewTest(APITestCase):
             last_name="Doe",
         )
 
-    def make_a_request(self, url_name, kind="get", data=None, **kwargs):
+    def make_request(self, url_name, kind="get", data=None, **kwargs):
         """
             Make a request to url_name endpoint
         :param kind: HTTP VERB
@@ -143,7 +144,7 @@ class BaseViewTest(APITestCase):
                    url_name,
                     kwargs=kwargs
                 ),
-                data=json.dumps(kwargs["data"]),
+                data=json.dumps(data),
                 content_type='application/json'
             )
         elif kind == "put":
@@ -186,7 +187,7 @@ class ClassTypesViewTest(BaseViewTest):
         """
 
         # hit the API endpoint
-        response = self.make_a_request("class_types-all")
+        response = self.make_request("class_types-all")
         # fetch the data from db
         expected = ClassTypes.objects.all()
         serialized = ClassTypesSerializer(expected, many=True)
@@ -200,7 +201,7 @@ class ClassTypesViewTest(BaseViewTest):
 
         # test with a class type that does not exist
         class_type = "Invalid class type"
-        response = self.make_a_request("class_types-detail", type=class_type)
+        response = self.make_request("class_types-detail", type=class_type)
         self.assertEqual(
             response.data["message"],
             "ClassType: \"Invalid class type\" does not exist"
@@ -215,7 +216,7 @@ class ClassTypesViewTest(BaseViewTest):
 
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
-        response = self.make_a_request("class_types-detail", type=class_type)
+        response = self.make_request("class_types-detail", type=class_type)
         # fetch the data from db
         expected = ClassTypes.objects.get(class_type=class_type)
         serialized = ClassTypesSerializer(expected)
@@ -230,7 +231,7 @@ class ClassTypesViewTest(BaseViewTest):
         # hit the API endpoint no logged user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
         new_class_type = "New class type no logged user"
-        response = self.make_a_request("class_types-detail", kind="put",
+        response = self.make_request("class_types-detail", kind="put",
             data={"class_type": new_class_type},
             type=class_type
         )
@@ -246,7 +247,7 @@ class ClassTypesViewTest(BaseViewTest):
         # hit the API endpoint unauthorized user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
         new_class_type = "New class type unauthorized user"
-        response = self.make_a_request("class_types-detail", kind="put",
+        response = self.make_request("class_types-detail", kind="put",
             data={"class_type": new_class_type},
             type=class_type
         )
@@ -261,7 +262,7 @@ class ClassTypesViewTest(BaseViewTest):
 
         # test with invalid data
         class_type = "Class type doesn't exist"
-        response = self.make_a_request("class_types-detail", kind="put",
+        response = self.make_request("class_types-detail", kind="put",
             data={"class_type": "Any Value"},
             type=class_type
         )
@@ -281,7 +282,7 @@ class ClassTypesViewTest(BaseViewTest):
         # hit the API endpoint valid user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
         new_class_type = "New class type"
-        response = self.make_a_request("class_types-detail", kind="put",
+        response = self.make_request("class_types-detail", kind="put",
             data={"class_type": new_class_type},
             type=class_type
         )
@@ -295,7 +296,7 @@ class ClassTypesViewTest(BaseViewTest):
 
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
-        response = self.make_a_request("class_types-detail", kind="delete",
+        response = self.make_request("class_types-detail", kind="delete",
             type=class_type
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -309,7 +310,7 @@ class ClassTypesViewTest(BaseViewTest):
 
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
-        response = self.make_a_request("class_types-detail", kind="delete",
+        response = self.make_request("class_types-detail", kind="delete",
             type=class_type
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -323,7 +324,7 @@ class ClassTypesViewTest(BaseViewTest):
 
         # test with invalid data
         class_type = "Class type doesn't exist"
-        response = self.make_a_request("class_types-detail", kind="delete",
+        response = self.make_request("class_types-detail", kind="delete",
             type=class_type
         )
         self.assertEqual(
@@ -340,7 +341,7 @@ class ClassTypesViewTest(BaseViewTest):
         self.login_client(self.admin.username, 'testing')
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
-        response = self.make_a_request("class_types-detail", kind="delete",
+        response = self.make_request("class_types-detail", kind="delete",
             type=class_type
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -366,7 +367,7 @@ class CoursesViewTest(BaseViewTest):
         """
 
         # hit the API endpoint
-        response = self.make_a_request("courses-all")
+        response = self.make_request("courses-all")
         # fetch the data from db
         expected = Courses.objects.all()
         serialized = CoursesSerializer(expected, many=True)
@@ -380,7 +381,7 @@ class CoursesViewTest(BaseViewTest):
 
         # test with a course that does not exist
         course = "Invalid course"
-        response = self.make_a_request("courses-detail", name=course)
+        response = self.make_request("courses-detail", name=course)
         self.assertEqual(
             response.data["message"],
             "Course with name: \"Invalid course\" does not exist"
@@ -395,7 +396,7 @@ class CoursesViewTest(BaseViewTest):
 
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
-        response = self.make_a_request("courses-detail", name=course_name)
+        response = self.make_request("courses-detail", name=course_name)
         # fetch the data from db
         expected = Courses.objects.get(course_name=course_name)
         serialized = CoursesSerializer(expected)
@@ -410,7 +411,7 @@ class CoursesViewTest(BaseViewTest):
         # hit the API endpoint no logged user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
         new_course_name = "New course no logged user"
-        response = self.make_a_request("courses-detail", kind="put",
+        response = self.make_request("courses-detail", kind="put",
             data={"course_name": new_course_name},
             name=course_name
         )
@@ -426,7 +427,7 @@ class CoursesViewTest(BaseViewTest):
         # hit the API endpoint unauthorized user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
         new_course_name = "New course unauthorized user"
-        response = self.make_a_request("courses-detail", kind="put",
+        response = self.make_request("courses-detail", kind="put",
             data={"course_name": new_course_name},
             name=course_name
         )
@@ -441,7 +442,7 @@ class CoursesViewTest(BaseViewTest):
 
         # test with invalid data
         course_name = "Course doesn't exist"
-        response = self.make_a_request("courses-detail", kind="put",
+        response = self.make_request("courses-detail", kind="put",
             data={"course_name": "Any Value"},
             name=course_name
         )
@@ -461,7 +462,7 @@ class CoursesViewTest(BaseViewTest):
         # hit the API endpoint valid user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
         new_course_name = "New course"
-        response = self.make_a_request("courses-detail", kind="put",
+        response = self.make_request("courses-detail", kind="put",
             data={"course_name": new_course_name},
             name=course_name
         )
@@ -475,7 +476,7 @@ class CoursesViewTest(BaseViewTest):
 
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
-        response = self.make_a_request("courses-detail", kind="delete",
+        response = self.make_request("courses-detail", kind="delete",
             name=course_name
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -489,7 +490,7 @@ class CoursesViewTest(BaseViewTest):
 
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
-        response = self.make_a_request("courses-detail", kind="delete",
+        response = self.make_request("courses-detail", kind="delete",
             name=course_name
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -503,7 +504,7 @@ class CoursesViewTest(BaseViewTest):
 
         # test with invalid data
         course_name = "Course doesn't exist"
-        response = self.make_a_request("courses-detail", kind="delete",
+        response = self.make_request("courses-detail", kind="delete",
             name=course_name
         )
         self.assertEqual(
@@ -520,19 +521,19 @@ class CoursesViewTest(BaseViewTest):
         self.login_client(self.admin.username, 'testing')
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
-        response = self.make_a_request("courses-detail", kind="delete",
+        response = self.make_request("courses-detail", kind="delete",
             name=course_name
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
-class GetAllAttendancesTest(BaseViewTest):
+class AttendancesViewTest(BaseViewTest):
     """
         Tests for the attendances/ endpoint
     """
 
     def setUp(self):
-        super(GetAllAttendancesTest, self).setUp()
+        super(AttendancesViewTest, self).setUp()
 
         # add test data
         ids = BaseViewTest.get_random_student_ids(4)
@@ -553,6 +554,39 @@ class GetAllAttendancesTest(BaseViewTest):
         [self.create_attendance(students[i], teachers[i], dates[i], courses[i],
                                 class_types[i], details[i]) for i in range(4)]
 
+    def create_attendance_data(self, create_objects=True):
+        student_id = BaseViewTest.get_random_student_ids(1)[0]
+        student_name = "Matcom Student"
+        teacher_name = "Matcom Teacher"
+        teacher_email = "matcom.teacher@matcom.uh.cu"
+        course_name = "Operating System"
+        class_type = "Partial Exam"
+        date = datetime.datetime.now()
+        iso_date = datetime.datetime.isoformat(date)
+
+        if create_objects:
+            self.create_student(student_id, student_name)
+            self.create_teacher(teacher_name, teacher_email)
+            self.create_course(course_name)
+            self.create_class_type(class_type)
+
+        return {
+            "student_id": student_id,
+            "student_name": student_name,
+            "course_name": course_name,
+            "class_type": class_type,
+            "date": iso_date
+        }
+
+    def test_get_all_attendances_no_logged_user(self):
+        """
+            This test ensures that to get all attendances the user need to be logged
+        """
+
+        # hit the API endpoint no logged user
+        response = self.make_request("attendances-list-create")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
     def test_get_all_attendances(self):
         """
             This test ensures that all attendances added in the setUp method
@@ -562,14 +596,110 @@ class GetAllAttendancesTest(BaseViewTest):
         self.login_client(self.user.username, "testing")
 
         # hit the API endpoint
-        response = self.client.get(
-            reverse("attendances-all", kwargs={"version": "v1"})
-        )
+        response = self.make_request("attendances-list-create")
         # fetch the data from db
         expected = Attendances.objects.all()
         serialized = AttendancesSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_an_attendance_no_logged_user(self):
+        """
+            This test ensures that to get an attendance the user need to be logged
+        """
+
+        # hit the API endpoint no logged user
+        attendance = random.randint(1, 4)
+        response = self.make_request("attendances-detail", id=attendance)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_get_an_attendance_that_does_not_exist(self):
+        """
+            This test try to get an attendances that doesn't exists and make assertions
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        # test with a attendance that does not exist
+        attendance = 5
+        response = self.make_request("attendances-detail", id=attendance)
+        self.assertEqual(
+            response.data["message"],
+            "Attendance with id: {} does not exist".format(attendance)
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_an_attendance(self):
+        """
+            This test ensures that a single attendance of a given type is
+            returned
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        # hit the API endpoint
+        attendance = random.randint(1, 4)
+        response = self.make_request("attendances-detail", id=attendance)
+        # fetch the data from db
+        expected = Attendances.objects.get(id=attendance)
+        serialized = AttendancesSerializer(expected)
+        self.assertEqual(response.data, serialized.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_create_an_attendance_no_logged_user(self):
+        """
+            This test ensures that to create an attendance the user need to be logged
+        """
+
+        attendance = self.create_attendance_data()
+
+        # hit the API endpoint
+        response = self.make_request("attendances-list-create", kind="post", data=attendance)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_an_attendance_no_authorized_user(self):
+        """
+            This test ensures that an unauthorized user can't create an attendance
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        attendance = self.create_attendance_data()
+
+        # hit the API endpoint
+        response = self.make_request("attendances-list-create", kind="post", data=attendance)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_an_invalid_attendance(self):
+        """
+            This test ensures that a single attendance can't be added with invalid data
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        invalid_attendance = {}
+
+        # test with invalid data
+        response = self.make_request("attendances-list-create", kind="post", data=invalid_attendance)
+        self.assertEqual(
+            response.data["message"],
+            "student_id, student_name, course_name, class_type and date are required to add an attendance"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # def test_create_an_attendance(self):
+    #     """
+    #         This test ensures that a single attendance can be added
+    #     """
+
+    #     self.login_client(self.admin.username, 'testing')
+
+    #     # hit the API endpoint
+    #     attendance = self.create_attendance_data(create_objects=False)
+    #     response = self.make_request("attendances-list-create", kind="post", data=attendance)
+
+    #     self.assertEqual(response.data, attendance)
+    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
 class AuthLoginUserTest(BaseViewTest):
@@ -577,35 +707,33 @@ class AuthLoginUserTest(BaseViewTest):
         Tests for the auth/login/ endpoint
     """
 
-    def login_a_user(self, username="", password=""):
-        url = reverse(
-            "auth-login",
-            kwargs={
-                "version": "v1"
-            }
-        )
-        return self.client.post(
-            url,
-            data=json.dumps({
-                "username": username,
-                "password": password
-            }),
-            content_type="application/json"
-        )
+    def test_login_user_with_invalid_credentials(self):
+        """
+            Test login user with invalid credentials
+        """
 
-    def test_login_user_with_valid_credentials(self):
-        # test login with valid credentials
-        response = self.login_a_user(self.user.username, "testing")
+        user_data = {
+            "username": "anonymous",
+            "password": "pass"
+        }
+        response = self.make_request("auth-login", kind="post", data=user_data)
+        # assert status code is 401 UNAUTHORIZED
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_user(self):
+        """
+            Test login user with valid credentials
+        """
+
+        user_data = {
+            "username": self.user.username,
+            "password": "testing"
+        }
+        response = self.make_request("auth-login", kind="post", data=user_data)
         # assert token key exists
         self.assertIn("token", response.data)
         # assert status code is 200 OK
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_login_user_with_invalid_credentials(self):
-        # test login with invalid credentials
-        response = self.login_a_user("anonymous", "pass")
-        # assert status code is 401 UNAUTHORIZED
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class AuthRegisterUserTest(BaseViewTest):
@@ -613,48 +741,34 @@ class AuthRegisterUserTest(BaseViewTest):
         Tests for auth/register/ endpoint
     """
 
-    def test_register_a_user_with_valid_data(self):
-        url = reverse(
-            "auth-register",
-            kwargs={
-                "version": "v1"
-            }
-        )
-        response = self.client.post(
-            url,
-            data=json.dumps(
-                {
-                    "password": "new_pass",
-                    "email": "new_user@mail.com",
-                    "first_name": "New",
-                    "last_name": "User"
-                }
-            ),
-            content_type="application/json"
-        )
+    def test_register_user_with_invalid_data(self):
+        """
+            Test register user with invalid data
+        """
+
+        user_data = {
+            "password": "",
+            "email": ""
+        }
+        response = self.make_request("auth-register", kind="post", data=user_data)
+        # assert status code
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_register_user(self):
+        """
+            Test register user with valid data
+        """
+
+        user_data = {
+            "password": "new_pass",
+            "email": "new_user@mail.com",
+            "first_name": "New",
+            "last_name": "User"
+        }
+        response = self.make_request("auth-register", kind="post", data=user_data)
         # assert status code is 201 CREATED
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(username="new_user@mail.com")
         self.assertEqual(user.email, "new_user@mail.com")
         self.assertEqual(user.first_name, "New")
         self.assertEqual(user.last_name, "User")
-
-    def test_register_a_user_with_invalid_data(self):
-        url = reverse(
-            "auth-register",
-            kwargs={
-                "version": "v1"
-            }
-        )
-        response = self.client.post(
-            url,
-            data=json.dumps(
-                {
-                    "password": "",
-                    "email": ""
-                }
-            ),
-            content_type='application/json'
-        )
-        # assert status code
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
