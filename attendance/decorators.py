@@ -41,3 +41,17 @@ def validate_class_type_request_data(fn):
             )
         return fn(*args, **kwargs)
     return decorated
+
+def validate_course_request_data(fn):
+    def decorated(*args, **kwargs):
+        # args[0] == GenericView Object
+        course_name = args[0].request.data.get("name", "")
+        if not course_name:
+            return Response(
+                data={
+                    "message": "name are required to create a course"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return fn(*args, **kwargs)
+    return decorated
