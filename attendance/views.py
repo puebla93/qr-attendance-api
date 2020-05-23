@@ -72,13 +72,31 @@ class RegisterUsersView(generics.CreateAPIView):
         return Response(status=status.HTTP_201_CREATED)
 
 
-class ListClassTypesView(generics.ListAPIView):
+class ListCreateClassTypesView(generics.ListCreateAPIView):
     """
-        Provides a get method handler.
+        GET class_types/
+        POST class_types/
     """
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
+
+    def post(self, request, *args, **kwargs):
+        class_type = request.data.get("class_type", "")
+
+        if not class_type:
+            return Response(
+                data={
+                    "message": "class_type are required to create a class type"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        _class_type = ClassTypes.get_or_cretate_class_type(class_type)
+
+        return Response(
+            data=AttendancesSerializer(_class_type).data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -208,14 +226,14 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
 
         student_id = request.data["student_id"]
         student_name = request.data["student_name"]
-        student = self.get_or_create_student(student_id, student_name)
+        student = Users.get_or_create_student(student_id, student_name)
 
         teacher = request.user
 
         course_name = request.data["course_name"]
-        course = self.get_or_cretate_course(course_name)
+        course = Courses.get_or_cretate_course(course_name)
         class_type = request.data["class_type"]
-        class_type = self.get_or_cretate_class_type(class_type)
+        class_type = ClassTypes.get_or_cretate_class_type(class_type)
 
         iso_date = request.data["date"]
         date = date.fromisoformat(iso_date)
@@ -233,38 +251,6 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
             data=AttendancesSerializer(attendance).data,
             status=status.HTTP_201_CREATED
         )
-
-    def get_or_create_student(self, student_id, student_name):
-        try:
-            student_user = Users.objects.get(username=student_id)
-        except Users.DoesNotExist:
-            first_name = student_name[0]
-            last_name = student_name[1]
-            student_user = Users.objects.create(
-                username=student_id,
-                password=student_id,
-                first_name=first_name,
-                last_name=last_name
-            )
-        return student_user
-
-    def get_or_cretate_course(self, course_name):
-        try:
-            course = Courses.objects.get(course_name=course_name)
-        except Courses.DoesNotExist:
-            course = Courses.objects.create(
-                course_name=course_name
-            )
-        return course
-
-    def get_or_cretate_class_type(self, class_type):
-        try:
-            _class_type = ClassTypes.objects.get(class_type=class_type)
-        except ClassTypes.DoesNotExist:
-            _class_type = ClassTypes.objects.create(
-                class_type=class_type
-            )
-        return _class_type
 
 
 class AttendancesDetailView(generics.RetrieveAPIView):
