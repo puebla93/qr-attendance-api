@@ -455,7 +455,7 @@ class CoursesViewTest(BaseViewTest):
         """
 
         # hit the API endpoint
-        response = self.make_request("courses-all")
+        response = self.make_request("courses-list-create")
         # fetch the data from db
         expected = Courses.objects.all()
         serialized = CoursesSerializer(expected, many=True)

@@ -86,7 +86,19 @@ class ListCreateClassTypesView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         class_type = request.data["class_type"]
 
-        class_type = ClassTypes.get_or_cretate_class_type(class_type)
+        try:
+            class_type = ClassTypes.objects.get(class_type=class_type)
+        except ClassTypes.DoesNotExist:
+            class_type = ClassTypes.objects.create(
+                class_type=class_type
+            )
+        else:
+            return Response(
+                data={
+                    "message": "class type: {} already exists".format(class_type.class_type)
+                },
+                status=status.HTTP_409_CONFLICT
+            )
 
         return Response(
             data=ClassTypesSerializer(class_type).data,

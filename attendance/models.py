@@ -42,8 +42,8 @@ class Courses(models.Model):
             course = cls.objects.create(
                 course_name=course_name,
                 course_details=course_details,
-                teachers=teachers
             )
+            course.teachers.set(teachers)
         return course
 
 
