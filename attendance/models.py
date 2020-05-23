@@ -46,27 +46,48 @@ class Courses(models.Model):
 
 class Users(User):
     TEACHERS_EMAIL_ADDRESS = '@matcom.uh.cu'
+    STUDENT_ID_LENGTH = 11
 
     teaching = models.ManyToManyField(Courses, blank=True)
 
-    @staticmethod
-    def is_valid_teacher_email(teacher_email):
-        return teacher_email.endswith(Users.TEACHERS_EMAIL_ADDRESS)
+    @classmethod
+    def is_valid_teacher_email(cls, teacher_email):
+        return teacher_email.endswith(cls.TEACHERS_EMAIL_ADDRESS)
 
-    @staticmethod
-    def is_valid_student_id(student_id):
-        from datetime import datetime
+    @classmethod
+    def is_valid_student_id(cls, student_id):
+        from datetime import date
+
+        if len(student_id) != cls.STUDENT_ID_LENGTH:
+            return False
 
         birthday = student_id[:6]
         try:
-            datetime(int("19"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
+            date(int("19"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
         except ValueError:
             try:
-                datetime(int("20"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
+                date(int("20"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
             except ValueError:
                 return False
 
         return True
+
+    @classmethod
+    def get_or_create_student(cls, student_id, student_name):
+        if not cls.is_valid_student_id(student_id):
+            return None
+        try:
+            student_user = cls.objects.get(username=student_id)
+        except cls.DoesNotExist:
+            first_name = student_name[0]
+            last_name = student_name[1]
+            student_user = cls.objects.create(
+                username=student_id,
+                password=student_id,
+                first_name=first_name,
+                last_name=last_name
+            )
+        return student_user
 
 
 class Attendances(models.Model):
