@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import *
+from .relations import *
 
 
 class TokenSerializer(serializers.Serializer):
@@ -23,6 +24,12 @@ class CoursesSerializer(serializers.ModelSerializer):
 
 
 class AttendancesSerializer(serializers.ModelSerializer):
+    student_id = serializers.CharField(source='student.username')
+    student_name = FunctionRelatedField(source='student', func_name="get_full_name")
+    teacher_name = FunctionRelatedField(source='teacher', func_name="get_full_name")
+    course_name = serializers.StringRelatedField(source='course')
+    class_type = serializers.StringRelatedField()
+
     class Meta:
         model = Attendances
-        fields = ("student", "teacher", "date", "course", "class_type", "details")
+        fields = ("student_id", "student_name", "teacher_name", "date", "course_name", "class_type", "details")
