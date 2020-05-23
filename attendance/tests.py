@@ -49,7 +49,8 @@ class BaseViewTest(APITestCase):
             year = str(random_date.year)[2:]
             month = '0'+str(random_date.month) if random_date.month < 10 else str(random_date.month)
             day = '0'+str(random_date.day) if random_date.day < 10 else str(random_date.day)
-            remaining = str(random.randrange(99999))
+            remaining = [str(random.randrange(10)) for _ in range(5)]
+            remaining = "".join(remaining)
             ids.append(year + month + day + remaining)
 
         return ids
@@ -182,7 +183,7 @@ class ClassTypesViewTest(BaseViewTest):
         """
 
         # hit the API endpoint
-        response = self.make_request("class_types-all")
+        response = self.make_request("class_types-list-create")
         # fetch the data from db
         expected = ClassTypes.objects.all()
         serialized = ClassTypesSerializer(expected, many=True)
@@ -340,6 +341,80 @@ class ClassTypesViewTest(BaseViewTest):
             type=class_type
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_create_a_class_type_no_logged_user(self):
+        """
+            This test ensures that to create a class type the user need to be logged
+        """
+
+        class_type = {"class_type": "Partial Exam"}
+
+        # hit the API endpoint
+        response = self.make_request("class_types-list-create", kind="post", data=class_type)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_a_class_type_no_authorized_user(self):
+        """
+            This test ensures that a unauthorized user can't create a class type
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        class_type = {"class_type": "Partial Exam"}
+
+        # hit the API endpoint
+        response = self.make_request("class_types-list-create", kind="post", data=class_type)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_an_invalid_class_type(self):
+        """
+            This test ensures that a single class type can't be created with invalid data
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        invalid_class_type = {}
+
+        # test with invalid data
+        response = self.make_request("class_types-list-create", kind="post", data=invalid_class_type)
+        self.assertEqual(
+            response.data["message"],
+            "class_type are required to create a class type"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_a_class_type_that_already_exists(self):
+        """
+            This test ensures that a single class type can be created
+            although already exists
+        """
+
+        _class_type = self.create_class_type("Partial Exam")
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint
+        class_type = {"class_type": "Partial Exam"}
+        response = self.make_request("class_types-list-create", kind="post", data=class_type)
+
+        self.assertEqual(response.data, class_type)
+        db_entry = ClassTypes.objects.get(class_type=response.data["class_type"])
+        self.assertEqual(db_entry.id, _class_type.id)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_a_class_type(self):
+        """
+            This test ensures that a single class type can be created
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint
+        class_type = {"class_type": "Partial Exam"}
+        response = self.make_request("class_types-list-create", kind="post", data=class_type)
+
+        self.assertEqual(response.data, class_type)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
 class CoursesViewTest(BaseViewTest):
@@ -665,7 +740,7 @@ class AttendancesViewTest(BaseViewTest):
         response = self.make_request("attendances-list-create", kind="post", data=attendance)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_create_an_invalid_attendance(self):
+    def test_create_an_attendance_with_invalid_data(self):
         """
             This test ensures that a single attendance can't be added with invalid data
         """
@@ -696,8 +771,6 @@ class AttendancesViewTest(BaseViewTest):
 
         attendance.update({'teacher_name':self.admin.get_full_name()})
         attendance['student_name'] = " ".join(attendance['student_name'])
-        a = getattr(Users, 'get_full_name')
-        b = str(a)
         self.assertEqual(response.data, attendance)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -714,8 +787,6 @@ class AttendancesViewTest(BaseViewTest):
 
         attendance.update({'teacher_name':self.admin.get_full_name()})
         attendance['student_name'] = " ".join(attendance['student_name'])
-        a = getattr(Users, 'get_full_name')
-        b = str(a)
         self.assertEqual(response.data, attendance)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
