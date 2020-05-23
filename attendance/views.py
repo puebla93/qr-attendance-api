@@ -82,20 +82,14 @@ class ListCreateClassTypesView(generics.ListCreateAPIView):
     serializer_class = ClassTypesSerializer
     permission_classes = (permissions.IsAdminUser|ReadOnly,)
 
+    @validate_class_type_request_data
     def post(self, request, *args, **kwargs):
-        class_type = request.data.get("class_type", "")
+        class_type = request.data["class_type"]
 
-        if not class_type:
-            return Response(
-                data={
-                    "message": "class_type are required to create a class type"
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        _class_type = ClassTypes.get_or_cretate_class_type(class_type)
+        class_type = ClassTypes.get_or_cretate_class_type(class_type)
 
         return Response(
-            data=ClassTypesSerializer(_class_type).data,
+            data=ClassTypesSerializer(class_type).data,
             status=status.HTTP_201_CREATED
         )
 
