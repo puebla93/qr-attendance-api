@@ -46,7 +46,7 @@ class LoginView(generics.CreateAPIView):
 
 class RegisterUsersView(generics.CreateAPIView):
     """
-    POST auth/register/
+        POST auth/register/
     """
 
     permission_classes = (permissions.AllowAny,)
@@ -193,27 +193,19 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
 
 
-class ListAttendancesView(generics.ListAPIView):
+class ListCreateAttendancesView(generics.ListCreateAPIView):
     """
-        Provides a get method handler.
-    """
-
-    queryset = Attendances.objects.all()
-    serializer_class = AttendancesSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-
-class CreateAttendancesView(generics.CreateAPIView):
-    """
-        POST attendances/
+        GET songs/
+        POST songs/
     """
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
-    permission_classes = (IsTeacherUser|IsStudentAssistantUser,)
+    permission_classes = (permissions.IsAdminUser|permissions.IsAuthenticated&ReadOnly,)
 
     @validate_attendance_request_data
     def post(self, request, *args, **kwargs):
+        from datetime import datetime
         student_id = request.data["student_id"]
         student_name = request.data["student_name"]
         student = self.get_or_create_student(student_id, student_name)
@@ -225,7 +217,8 @@ class CreateAttendancesView(generics.CreateAPIView):
         class_type = request.data["class_type"]
         class_type = self.get_or_cretate_class_type(class_type)
 
-        date = request.data["date"]
+        iso_date = request.data["date"]
+        date = datetime.fromisoformat(iso_date)
         details = request.data.get("details", "")
 
         attendance = Attendances.objects.create(
@@ -241,6 +234,34 @@ class CreateAttendancesView(generics.CreateAPIView):
             status=status.HTTP_201_CREATED
         )
 
+    def get_or_create_student(self, student_id, student_name):
+        student_user = User.objects.get(username=student_id)
+        if student_user is None:
+            first_name = student_name.split()[0]
+            last_name = student_name.split()[1:]
+            student_user = User.objects.create(
+                username=student_id,
+                password=student_id,
+                first_name=first_name,
+                last_name=last_name
+            )
+        return student_user
+
+    def get_or_cretate_course(self, course_name):
+        course = Courses.objects.get(course_name=course_name)
+        if course is None:
+            course = Courses.objects.create(
+                course_name=course_name
+            )
+        return course
+
+    def get_or_cretate_class_type(self, class_type):
+        class_type = ClassTypes.objects.get(class_type=class_type)
+        if class_type is None:
+            class_type = ClassTypes.objects.create(
+                class_type=class_type
+            )
+        return class_type
 
 class AttendancesDetailView(generics.RetrieveAPIView):
     """
