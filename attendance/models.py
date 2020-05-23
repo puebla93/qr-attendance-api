@@ -57,7 +57,7 @@ class Attendances(models.Model):
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, related_name='teacher')
 
     # class date
-    date = models.DateField(editable=False)
+    date = models.DateTimeField(editable=False)
 
     # course (eg. Programming, Artificial Intelligence)
     course = models.ForeignKey(Courses, on_delete=models.CASCADE)
