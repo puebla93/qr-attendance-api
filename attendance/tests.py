@@ -268,6 +268,24 @@ class ClassTypesViewTest(BaseViewTest):
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_update_a_class_type_with_invalid_data(self):
+        """
+            This test ensures that a single class_type can't be updated without
+            corresponding data
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint valid user
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        new_class_type = "New class type"
+        response = self.make_request("class_types-detail", kind="put",
+            data={"bad_class_type_key": new_class_type},
+            type=class_type
+        )
+        self.assertEqual(response.data["message"], "class_type are required to create a class type")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_update_a_class_type(self):
         """
             This test ensures that a single class_type can be updated
