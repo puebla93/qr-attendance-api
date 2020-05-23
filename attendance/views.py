@@ -80,6 +80,7 @@ class ListCreateClassTypesView(generics.ListCreateAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
+    permission_classes = (permissions.IsAdminUser|ReadOnly,)
 
     def post(self, request, *args, **kwargs):
         class_type = request.data.get("class_type", "")
