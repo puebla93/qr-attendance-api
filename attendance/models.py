@@ -10,6 +10,16 @@ class ClassTypes(models.Model):
     def __str__(self):
         return self.class_type
 
+    @staticmethod
+    def get_or_cretate_class_type(class_type):
+        try:
+            _class_type = ClassTypes.objects.get(class_type=class_type)
+        except ClassTypes.DoesNotExist:
+            _class_type = ClassTypes.objects.create(
+                class_type=class_type
+            )
+        return _class_type
+
 
 class Courses(models.Model):
     # course name (eg. Programming, Artificial Intelligence)
