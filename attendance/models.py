@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 
 
 class ClassTypes(models.Model):
@@ -17,16 +18,43 @@ class Courses(models.Model):
     # course details (eg. Optative course, Elective course)
     course_details = models.TextField(default='')
 
+    teachers = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
+
     def __str__(self):
         return self.course_name
 
 
+class Users(User):
+    TEACHERS_EMAIL_ADDRESS = '@matcom.uh.cu'
+
+    teaching = models.ManyToManyField(Courses, blank=True)
+
+    @staticmethod
+    def is_valid_teacher_email(teacher_email):
+        return teacher_email.endswith(Users.TEACHERS_EMAIL_ADDRESS)
+
+    @staticmethod
+    def is_valid_student_id(student_id):
+        from datetime import datetime
+
+        birthday = student_id[:6]
+        try:
+            datetime(int("19"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
+        except ValueError:
+            try:
+                datetime(int("20"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
+            except ValueError:
+                return False
+
+        return True
+
+
 class Attendances(models.Model):
     # the student
-    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     # the class teacher
-    teacher = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='teacher')
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, related_name='teacher')
 
     # class date
     date = models.DateField(editable=False)
