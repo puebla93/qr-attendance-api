@@ -9,13 +9,30 @@ from rest_framework.views import status
 
 from .models import *
 from .serializers import *
-from .util import is_valid_student_id, is_valid_teacher_email
 
 # tests for views
 
 
 class BaseViewTest(APITestCase):
     client = APIClient()
+
+    def setUp(self):
+        # create an admin user
+        self.admin = Users.objects.create_superuser(
+            username="jonny",
+            email="jonny@email.com",
+            password="testing",
+            first_name="John",
+            last_name="Doe",
+        )
+        # create a regular user
+        self.user = Users.objects.create_user(
+            username="jane",
+            email="jane@email.com",
+            password="testing",
+            first_name="Jane",
+            last_name="Doe",
+        )
 
     @staticmethod
     def get_random_student_ids(k):
@@ -38,11 +55,9 @@ class BaseViewTest(APITestCase):
         return ids
 
     @staticmethod
-    def create_student(student_id="", student_name=""):
-        if is_valid_student_id(student_id) and student_name != "":
-            first_name = student_name.split()[0]
-            last_name = student_name.split()[1:]
-            return User.objects.create(
+    def create_student(student_id="", first_name="", last_name=""):
+        if Users.is_valid_student_id(student_id) and first_name != "" and last_name != "":
+            return Users.objects.create_user(
                 username=student_id,
                 password=student_id,
                 first_name=first_name,
@@ -50,11 +65,9 @@ class BaseViewTest(APITestCase):
             )
 
     @staticmethod
-    def create_teacher(teacher_email="", teacher_name=""):
-        if is_valid_teacher_email(teacher_email) and teacher_name != "":
-            first_name = teacher_name.split()[0]
-            last_name = teacher_name.split()[1:]
-            return User.objects.create(
+    def create_teacher(teacher_email="", first_name="", last_name=""):
+        if Users.is_valid_teacher_email(teacher_email) and first_name != "" and last_name != "":
+            return Users.objects.create_user(
                 username=teacher_email,
                 email=teacher_email,
                 password="password",
@@ -104,24 +117,6 @@ class BaseViewTest(APITestCase):
         )
         self.client.login(username=username, password=password)
         return self.token
-
-    def setUp(self):
-        # create an admin user
-        self.admin = User.objects.create_superuser(
-            username="jonny",
-            email="jonny@email.com",
-            password="testing",
-            first_name="John",
-            last_name="Doe",
-        )
-        # create a regular user
-        self.user = User.objects.create_user(
-            username="jane",
-            email="jane@email.com",
-            password="testing",
-            first_name="Jane",
-            last_name="Doe",
-        )
 
     def make_request(self, url_name, kind="get", data=None, **kwargs):
         """
@@ -537,11 +532,12 @@ class AttendancesViewTest(BaseViewTest):
 
         # add test data
         ids = BaseViewTest.get_random_student_ids(4)
-        names = ["John Dow", "Jane Doe", "John Smith", "Jane Smith"]
-        students = [self.create_student(ids[i], names[i]) for i in range(4)]
+        first_names = ["John", "Jane", "John", "Jane"]
+        last_names = ["Doe", "Doe", "Smith", "Smith"]
+        students = [self.create_student(ids[i], first_names[i], last_names[i]) for i in range(4)]
 
-        emails = [name.lower().split()[0]+"."+name.lower().split()[1]+"@matcom.uh.cu" for name in names]
-        teachers = [self.create_teacher(emails[i], names[i]) for i in range(4)]
+        emails = [first_names[i].lower()+"."+last_names[i].lower()+"@matcom.uh.cu" for i in range(4)]
+        teachers = [self.create_teacher(emails[i], first_names[i], last_names[i]) for i in range(4)]
 
         course_names = ["Programming", "Artificial Intelligence", "Computer Architecture", "Computer Vision"]
         courses = [self.create_course(course_name) for course_name in course_names]
@@ -549,24 +545,22 @@ class AttendancesViewTest(BaseViewTest):
         class_types = ["Final Test", "Lab Lesson", "Practical Lesson", "Conference"]
         class_types = [self.create_class_type(class_type) for class_type in class_types]
 
-        dates = [datetime.datetime.now() - datetime.timedelta(days=days) for days in range(4)]
+        dates = [datetime.date.today() - datetime.timedelta(days=days) for days in range(4)]
         details = ["", "Lesson Before Final Test", "Last Practical Lesson", "First Conference"]
         [self.create_attendance(students[i], teachers[i], dates[i], courses[i],
                                 class_types[i], details[i]) for i in range(4)]
 
     def create_attendance_data(self, create_objects=True):
         student_id = BaseViewTest.get_random_student_ids(1)[0]
-        student_name = "Matcom Student"
-        teacher_name = "Matcom Teacher"
-        teacher_email = "matcom.teacher@matcom.uh.cu"
+        student_name = ["Matcom", "Student"]
         course_name = "Operating System"
         class_type = "Partial Exam"
-        date = datetime.datetime.now()
-        iso_date = datetime.datetime.isoformat(date)
+        details = "Class Details"
+        date = datetime.date.today()
+        iso_date = datetime.date.isoformat(date)
 
         if create_objects:
-            self.create_student(student_id, student_name)
-            self.create_teacher(teacher_name, teacher_email)
+            self.create_student(student_id, student_name[0], student_name[1])
             self.create_course(course_name)
             self.create_class_type(class_type)
 
@@ -575,7 +569,8 @@ class AttendancesViewTest(BaseViewTest):
             "student_name": student_name,
             "course_name": course_name,
             "class_type": class_type,
-            "date": iso_date
+            "date": iso_date,
+            "details": details
         }
 
     def test_get_all_attendances_no_logged_user(self):
@@ -687,19 +682,42 @@ class AttendancesViewTest(BaseViewTest):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    # def test_create_an_attendance(self):
-    #     """
-    #         This test ensures that a single attendance can be added
-    #     """
+    def test_create_an_attendance_without_created_attendance_data(self):
+        """
+            This test ensures that a single attendance can be added without
+            student, class type, course having been created before
+        """
 
-    #     self.login_client(self.admin.username, 'testing')
+        self.login_client(self.admin.username, 'testing')
 
-    #     # hit the API endpoint
-    #     attendance = self.create_attendance_data(create_objects=False)
-    #     response = self.make_request("attendances-list-create", kind="post", data=attendance)
+        # hit the API endpoint
+        attendance = self.create_attendance_data(create_objects=False)
+        response = self.make_request("attendances-list-create", kind="post", data=attendance)
 
-    #     self.assertEqual(response.data, attendance)
-    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        attendance.update({'teacher_name':self.admin.get_full_name()})
+        attendance['student_name'] = " ".join(attendance['student_name'])
+        a = getattr(Users, 'get_full_name')
+        b = str(a)
+        self.assertEqual(response.data, attendance)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_an_attendance(self):
+        """
+            This test ensures that a single attendance can be added
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint
+        attendance = self.create_attendance_data()
+        response = self.make_request("attendances-list-create", kind="post", data=attendance)
+
+        attendance.update({'teacher_name':self.admin.get_full_name()})
+        attendance['student_name'] = " ".join(attendance['student_name'])
+        a = getattr(Users, 'get_full_name')
+        b = str(a)
+        self.assertEqual(response.data, attendance)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
 class AuthLoginUserTest(BaseViewTest):
@@ -741,16 +759,30 @@ class AuthRegisterUserTest(BaseViewTest):
         Tests for auth/register/ endpoint
     """
 
-    def test_register_user_with_invalid_data(self):
+    def test_register_user_with_invalid_email(self):
         """
-            Test register user with invalid data
+            Test register user with invalid email
         """
 
         user_data = {
-            "password": "",
-            "email": ""
+            "username": "new_user@mail.com",
+            "password": "pass"
         }
         response = self.make_request("auth-register", kind="post", data=user_data)
+        self.assertEqual(response.data["message"], "email and password is required to register a user")
+        # assert status code
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_register_user_with_invalid_password(self):
+        """
+            Test register user with invalid password
+        """
+        user_data = {
+            "username": "new_user@matcom.uh.cu",
+            "password": ""
+        }
+        response = self.make_request("auth-register", kind="post", data=user_data)
+        self.assertEqual(response.data["message"], "email and password is required to register a user")
         # assert status code
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -759,16 +791,17 @@ class AuthRegisterUserTest(BaseViewTest):
             Test register user with valid data
         """
 
+        email = "new_user@matcom.uh.cu"
         user_data = {
+            "username": email,
             "password": "new_pass",
-            "email": "new_user@mail.com",
             "first_name": "New",
             "last_name": "User"
         }
         response = self.make_request("auth-register", kind="post", data=user_data)
         # assert status code is 201 CREATED
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        user = User.objects.get(username="new_user@mail.com")
-        self.assertEqual(user.email, "new_user@mail.com")
+        user = Users.objects.get(username=email)
+        self.assertEqual(user.email, email)
         self.assertEqual(user.first_name, "New")
         self.assertEqual(user.last_name, "User")
