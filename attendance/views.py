@@ -174,7 +174,17 @@ class ListCreateCoursesView(generics.ListCreateAPIView):
         course_details = request.data.get("course_details", "")
         teachers = request.data.get("teachers", [])
 
-        course = Courses.get_or_cretate_class_type(course_name, course_details)
+        try:
+            course = Courses.objects.get(course_name=course_name)
+        except ClassTypes.DoesNotExist:
+            course = Courses.get_or_cretate_class_type(course_name, course_details, teachers)
+        else:
+            return Response(
+                data={
+                    "message": "course: {} already exists".format(course.course_name)
+                },
+                status=status.HTTP_409_CONFLICT
+            )
 
         return Response(
             data=CoursesSerializer(course).data,
