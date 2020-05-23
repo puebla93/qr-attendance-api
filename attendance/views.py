@@ -195,8 +195,8 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class ListCreateAttendancesView(generics.ListCreateAPIView):
     """
-        GET songs/
-        POST songs/
+        GET attendances/
+        POST attendances/
     """
 
     queryset = Attendances.objects.all()
