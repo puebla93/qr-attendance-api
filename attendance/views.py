@@ -1,5 +1,4 @@
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.models import User
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import status
@@ -24,7 +23,7 @@ class LoginView(generics.CreateAPIView):
     # class setting
     permission_classes = (permissions.AllowAny,)
 
-    queryset = User.objects.all()
+    queryset = Users.objects.all()
 
     def post(self, request, *args, **kwargs):
         username = request.data.get("username", "")
@@ -52,18 +51,18 @@ class RegisterUsersView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        email = request.data.get("email", "")
+        email = request.data.get("username", "")
         password = request.data.get("password", "")
         first_name = request.data.get("first_name", "")
         last_name = request.data.get("last_name", "")
-        if not (email and password):
+        if not (Users.is_valid_teacher_email(email) and password):
             return Response(
                 data={
                     "message": "email and password is required to register a user"
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-        new_user = User.objects.create_user(
+        new_user = Users.objects.create_user(
             username=email,
             email=email,
             password=password,
@@ -205,12 +204,13 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
 
     @validate_attendance_request_data
     def post(self, request, *args, **kwargs):
-        from datetime import datetime
+        from datetime import date
+
         student_id = request.data["student_id"]
         student_name = request.data["student_name"]
         student = self.get_or_create_student(student_id, student_name)
 
-        teacher = None
+        teacher = request.user
 
         course_name = request.data["course_name"]
         course = self.get_or_cretate_course(course_name)
@@ -218,7 +218,7 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
         class_type = self.get_or_cretate_class_type(class_type)
 
         iso_date = request.data["date"]
-        date = datetime.fromisoformat(iso_date)
+        date = date.fromisoformat(iso_date)
         details = request.data.get("details", "")
 
         attendance = Attendances.objects.create(
@@ -235,11 +235,12 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
         )
 
     def get_or_create_student(self, student_id, student_name):
-        student_user = User.objects.get(username=student_id)
-        if student_user is None:
-            first_name = student_name.split()[0]
-            last_name = student_name.split()[1:]
-            student_user = User.objects.create(
+        try:
+            student_user = Users.objects.get(username=student_id)
+        except Users.DoesNotExist:
+            first_name = student_name[0]
+            last_name = student_name[1]
+            student_user = Users.objects.create(
                 username=student_id,
                 password=student_id,
                 first_name=first_name,
@@ -248,20 +249,23 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
         return student_user
 
     def get_or_cretate_course(self, course_name):
-        course = Courses.objects.get(course_name=course_name)
-        if course is None:
+        try:
+            course = Courses.objects.get(course_name=course_name)
+        except Courses.DoesNotExist:
             course = Courses.objects.create(
                 course_name=course_name
             )
         return course
 
     def get_or_cretate_class_type(self, class_type):
-        class_type = ClassTypes.objects.get(class_type=class_type)
-        if class_type is None:
-            class_type = ClassTypes.objects.create(
+        try:
+            _class_type = ClassTypes.objects.get(class_type=class_type)
+        except ClassTypes.DoesNotExist:
+            _class_type = ClassTypes.objects.create(
                 class_type=class_type
             )
-        return class_type
+        return _class_type
+
 
 class AttendancesDetailView(generics.RetrieveAPIView):
     """
