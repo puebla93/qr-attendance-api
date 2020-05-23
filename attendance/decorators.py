@@ -53,5 +53,24 @@ def validate_course_request_data(fn):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+        teachers = args[0].request.data.get("teachers", [])
+        if isinstance(teachers, list):
+            for teacher in teachers:
+                try:
+                    Users.objects.get(username=teacher)
+                except Users.DoesNotExist:
+                    return Response(
+                        data={
+                            "message": "user with username: {} does't exists".format(teacher)
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+        else:
+            return Response(
+                data={
+                    "message": "teachers must be a list"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
         return fn(*args, **kwargs)
     return decorated
