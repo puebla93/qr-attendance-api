@@ -34,12 +34,14 @@ class Courses(models.Model):
         return self.course_name
 
     @classmethod
-    def get_or_cretate_course(cls, course_name):
+    def get_or_cretate_course(cls, course_name, course_details="", teachers=[]):
         try:
             course = cls.objects.get(course_name=course_name)
         except cls.DoesNotExist:
             course = cls.objects.create(
-                course_name=course_name
+                course_name=course_name,
+                course_details=course_details,
+                teachers=teachers
             )
         return course
 
