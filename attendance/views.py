@@ -117,6 +117,7 @@ class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+    @validate_class_type_request_data
     def put(self, request, *args, **kwargs):
         try:
             class_type = self.queryset.get(class_type=kwargs["type"])
