@@ -10,12 +10,12 @@ class ClassTypes(models.Model):
     def __str__(self):
         return self.class_type
 
-    @staticmethod
-    def get_or_cretate_class_type(class_type):
+    @classmethod
+    def get_or_cretate_class_type(cls, class_type):
         try:
-            _class_type = ClassTypes.objects.get(class_type=class_type)
-        except ClassTypes.DoesNotExist:
-            _class_type = ClassTypes.objects.create(
+            _class_type = cls.objects.get(class_type=class_type)
+        except cls.DoesNotExist:
+            _class_type = cls.objects.create(
                 class_type=class_type
             )
         return _class_type
@@ -32,6 +32,16 @@ class Courses(models.Model):
 
     def __str__(self):
         return self.course_name
+
+    @classmethod
+    def get_or_cretate_course(cls, course_name):
+        try:
+            course = cls.objects.get(course_name=course_name)
+        except cls.DoesNotExist:
+            course = cls.objects.create(
+                course_name=course_name
+            )
+        return course
 
 
 class Users(User):
