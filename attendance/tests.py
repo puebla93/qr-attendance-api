@@ -415,10 +415,11 @@ class ClassTypesViewTest(BaseViewTest):
         class_type = {"class_type": "Partial Exam"}
         response = self.make_request("class_types-list-create", kind="post", data=class_type)
 
-        self.assertEqual(response.data, class_type)
-        db_entry = ClassTypes.objects.get(class_type=response.data["class_type"])
-        self.assertEqual(db_entry.id, _class_type.id)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response.data["message"],
+            "class type: {} already exists".format(class_type["class_type"])
+        )
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
 
     def test_create_a_class_type(self):
         """
