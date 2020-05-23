@@ -549,12 +549,16 @@ class CoursesViewTest(BaseViewTest):
 
         # hit the API endpoint valid user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
-        new_course_name = "New course"
+        course = {
+            'course_name': "New course",
+            'course_details': "New course detail"
+        }
+
         response = self.make_request("courses-detail", kind="put",
-            data={"course_name": new_course_name},
+            data=course,
             name=course_name
         )
-        self.assertEqual(response.data, {"course_name": new_course_name})
+        self.assertEqual(response.data, course)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_a_course_no_logged_user(self):
