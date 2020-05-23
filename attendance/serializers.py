@@ -20,7 +20,7 @@ class ClassTypesSerializer(serializers.ModelSerializer):
 class CoursesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Courses
-        fields = ("course_name",)
+        fields = ("course_name", "course_details")
 
 
 class AttendancesSerializer(serializers.ModelSerializer):

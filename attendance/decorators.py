@@ -45,7 +45,7 @@ def validate_class_type_request_data(fn):
 def validate_course_request_data(fn):
     def decorated(*args, **kwargs):
         # args[0] == GenericView Object
-        course_name = args[0].request.data.get("name", "")
+        course_name = args[0].request.data.get("course_name", "")
         if not course_name:
             return Response(
                 data={
