@@ -27,3 +27,17 @@ def validate_attendance_request_data(fn):
             )
         return fn(*args, **kwargs)
     return decorated
+
+def validate_class_type_request_data(fn):
+    def decorated(*args, **kwargs):
+        # args[0] == GenericView Object
+        class_type = args[0].request.data.get("class_type", "")
+        if not class_type:
+            return Response(
+                data={
+                    "message": "class_type are required to create a class type"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return fn(*args, **kwargs)
+    return decorated
