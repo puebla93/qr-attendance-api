@@ -9,7 +9,7 @@ urlpatterns = [
     path('class_types/', ListCreateClassTypesView.as_view(), name="class_types-list-create"),
     path('class_types/<str:type>/', ClassTypesDetailView.as_view(), name="class_types-detail"),
 
-    path('courses/', ListCoursesView.as_view(), name="courses-all"),
+    path('courses/', ListCreateCoursesView.as_view(), name="courses-list-create"),
     path('courses/<str:name>/', CoursesDetailView.as_view(), name="courses-detail"),
 
     path('attendances/', ListCreateAttendancesView.as_view(), name="attendances-list-create"),
