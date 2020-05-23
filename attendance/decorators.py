@@ -1,5 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.views import status
+from .models import Users
 
 
 def validate_attendance_request_data(fn):
@@ -14,6 +15,13 @@ def validate_attendance_request_data(fn):
             return Response(
                 data={
                     "message": "student_id, student_name, course_name, class_type and date are required to add an attendance"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not Users.is_valid_student_id(student_id):
+            return Response(
+                data={
+                    "message": "student_id is invalid"
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
