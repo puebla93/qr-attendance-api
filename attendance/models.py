@@ -38,6 +38,7 @@ class Courses(models.Model):
         try:
             course = cls.objects.get(course_name=course_name)
         except cls.DoesNotExist:
+            teachers = [Users.objects.get(username=teacher) for teacher in teachers]
             course = cls.objects.create(
                 course_name=course_name,
                 course_details=course_details,
