@@ -95,7 +95,7 @@ class ListCreateClassTypesView(generics.ListCreateAPIView):
         _class_type = ClassTypes.get_or_cretate_class_type(class_type)
 
         return Response(
-            data=AttendancesSerializer(_class_type).data,
+            data=ClassTypesSerializer(_class_type).data,
             status=status.HTTP_201_CREATED
         )
 
@@ -151,13 +151,32 @@ class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
 
 
-class ListCoursesView(generics.ListAPIView):
+class ListCoursesView(generics.ListCreateAPIView):
     """
-        Provides a get method handler.
+        GET courses/
+        POST courses/
     """
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
+    permission_classes = (permissions.IsAdminUser|ReadOnly,)
+
+    def post(self, request, *args, **kwargs):
+        class_type = request.data.get("class_type", "")
+
+        if not class_type:
+            return Response(
+                data={
+                    "message": "class_type are required to create a class type"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        _class_type = ClassTypes.get_or_cretate_class_type(class_type)
+
+        return Response(
+            data=CoursesSerializer(_class_type).data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
