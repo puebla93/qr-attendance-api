@@ -26,12 +26,12 @@ class IsStudentAssistantUser(BasePermission):
     """
 
     def has_permission(self, request, view):
-        course_name = request.data["course_name"]
+        course_name = request.data.get("course_name", "")
         try:
             course = Courses.objects.get(course_name=course_name)
         except Courses.DoesNotExist:
             return False
-        return bool(request.user and course in request.user.teaching)
+        return bool(request.user and request.user in course.teachers.all())
 
 
 class IsOwner(BasePermission):
