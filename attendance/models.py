@@ -103,10 +103,10 @@ class Courses(models.Model):
 
 class Attendances(models.Model):
     # the student
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='student')
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='student_attendances')
 
     # the class teacher
-    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, related_name='teacher')
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, related_name='teacher_attendances')
 
     # class date
     date = models.DateField(editable=False)
