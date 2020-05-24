@@ -83,7 +83,7 @@ class ListCreateClassTypesView(generics.ListCreateAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
-    permission_classes = (permissions.IsAdminUser|ReadOnly,)
+    permission_classes = (IsTeacherUser|ReadOnly,)
 
     @validate_class_type_request_data
     def post(self, request, *args, **kwargs):
@@ -118,7 +118,7 @@ class ClassTypesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = ClassTypes.objects.all()
     serializer_class = ClassTypesSerializer
-    permission_classes = (permissions.IsAdminUser|ReadOnly,)
+    permission_classes = (IsTeacherUser|ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
@@ -169,7 +169,7 @@ class ListCreateCoursesView(generics.ListCreateAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (permissions.IsAdminUser|ReadOnly,)
+    permission_classes = (IsTeacherUser|ReadOnly,)
 
     @validate_course_request_data
     def post(self, request, *args, **kwargs):
@@ -204,7 +204,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (permissions.IsAdminUser|ReadOnly,)
+    permission_classes = (IsTeacherUser|ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
@@ -255,7 +255,7 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
-    permission_classes = (permissions.IsAdminUser|permissions.IsAuthenticated&ReadOnly,)
+    permission_classes = (IsTeacherUser|permissions.IsAuthenticated&ReadOnly,)
 
     @validate_attendance_request_data
     def post(self, request, *args, **kwargs):
