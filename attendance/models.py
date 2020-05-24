@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 
 
@@ -47,7 +47,7 @@ class Courses(models.Model):
         return course
 
 
-class Users(User):
+class Users(AbstractUser):
     TEACHERS_EMAIL_ADDRESS = '@matcom.uh.cu'
     STUDENT_ID_LENGTH = 11
 
