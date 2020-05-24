@@ -69,7 +69,10 @@ class RegisterUsersView(generics.CreateAPIView):
             first_name=first_name,
             last_name=last_name,
         )
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(
+            data=UsersSerializer(new_user).data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class ListCreateClassTypesView(generics.ListCreateAPIView):

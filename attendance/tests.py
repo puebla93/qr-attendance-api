@@ -1023,6 +1023,10 @@ class AuthRegisterUserTest(BaseViewTest):
         response = self.make_request("auth-register", kind="post", data=user_data)
         # assert status code is 201 CREATED
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['teaching'], [])
+        self.assertEqual(response.data['username'], email)
+        full_name = " ".join([user_data['first_name'], user_data['last_name']])
+        self.assertEqual(response.data['full_name'], full_name)
         user = Users.objects.get(username=email)
         self.assertEqual(user.email, email)
         self.assertEqual(user.first_name, "New")

@@ -33,10 +33,19 @@ class CoursesSerializer(serializers.ModelSerializer):
         return instance
 
 
+class UsersSerializer(serializers.ModelSerializer):
+    full_name = serializers.StringRelatedField(source="get_full_name")
+    teaching = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = Users
+        fields = ("username", "full_name", "teaching")
+
+
 class AttendancesSerializer(serializers.ModelSerializer):
     student_id = serializers.StringRelatedField(source='student')
-    student_name = FunctionRelatedField(source='student', func_name="get_full_name")
-    teacher_name = FunctionRelatedField(source='teacher', func_name="get_full_name")
+    student_name = serializers.StringRelatedField(source="student.get_full_name")
+    teacher_name = serializers.StringRelatedField(source="teacher.get_full_name")
     course_name = serializers.StringRelatedField(source='course')
     class_type = serializers.StringRelatedField()
 
