@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from .models import *
-from .relations import *
 
 
 class TokenSerializer(serializers.Serializer):

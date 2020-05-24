@@ -1,4 +1,5 @@
 from rest_framework.permissions import SAFE_METHODS, BasePermission
+from .models import *
 
 
 class ReadOnly(BasePermission):
@@ -16,7 +17,7 @@ class IsTeacherUser(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_teacher)
+        return bool(request.user and Users.is_valid_teacher_email(request.user.username))
 
 
 class IsStudentAssistantUser(BasePermission):
@@ -26,6 +27,7 @@ class IsStudentAssistantUser(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_student_assistant)
+
 
 class IsOwner(BasePermission):
     """
