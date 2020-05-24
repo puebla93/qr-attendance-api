@@ -1,6 +1,54 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import User
 from django.conf import settings
+
+
+class Users(User):
+    TEACHERS_EMAIL_ADDRESS = '@matcom.uh.cu'
+    STUDENT_ID_LENGTH = 11
+
+    class Meta:
+        ordering = ["last_name"]
+        proxy = True
+
+    @classmethod
+    def is_valid_teacher_email(cls, teacher_email):
+        return teacher_email.endswith(cls.TEACHERS_EMAIL_ADDRESS)
+
+    @classmethod
+    def is_valid_student_id(cls, student_id):
+        from datetime import date
+
+        if len(student_id) != cls.STUDENT_ID_LENGTH:
+            return False
+
+        birthday = student_id[:6]
+        try:
+            date(int("19"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
+        except ValueError:
+            try:
+                date(int("20"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
+            except ValueError:
+                return False
+
+        return True
+
+    @classmethod
+    def get_or_create_student(cls, student_id, student_name):
+        if not cls.is_valid_student_id(student_id):
+            return None
+        try:
+            student_user = cls.objects.get(username=student_id)
+        except cls.DoesNotExist:
+            first_name = student_name[0]
+            last_name = student_name[1]
+            student_user = cls.objects.create(
+                username=student_id,
+                password=student_id,
+                first_name=first_name,
+                last_name=last_name
+            )
+        return student_user
 
 
 class ClassTypes(models.Model):
@@ -51,50 +99,6 @@ class Courses(models.Model):
             )
             course.teachers.set(teachers)
         return course
-
-
-class Users(AbstractUser):
-    TEACHERS_EMAIL_ADDRESS = '@matcom.uh.cu'
-    STUDENT_ID_LENGTH = 11
-
-    @classmethod
-    def is_valid_teacher_email(cls, teacher_email):
-        return teacher_email.endswith(cls.TEACHERS_EMAIL_ADDRESS)
-
-    @classmethod
-    def is_valid_student_id(cls, student_id):
-        from datetime import date
-
-        if len(student_id) != cls.STUDENT_ID_LENGTH:
-            return False
-
-        birthday = student_id[:6]
-        try:
-            date(int("19"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
-        except ValueError:
-            try:
-                date(int("20"+birthday[:2]), int(birthday[2:4]), int(birthday[4:6]))
-            except ValueError:
-                return False
-
-        return True
-
-    @classmethod
-    def get_or_create_student(cls, student_id, student_name):
-        if not cls.is_valid_student_id(student_id):
-            return None
-        try:
-            student_user = cls.objects.get(username=student_id)
-        except cls.DoesNotExist:
-            first_name = student_name[0]
-            last_name = student_name[1]
-            student_user = cls.objects.create(
-                username=student_id,
-                password=student_id,
-                first_name=first_name,
-                last_name=last_name
-            )
-        return student_user
 
 
 class Attendances(models.Model):

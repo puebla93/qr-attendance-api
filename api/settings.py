@@ -42,8 +42,6 @@ INSTALLED_APPS = [
     'attendance'
 ]
 
-AUTH_USER_MODEL = 'attendance.Users'
-
 REST_FRAMEWORK = {
     # Versioning settings
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
