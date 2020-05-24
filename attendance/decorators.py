@@ -57,7 +57,14 @@ def validate_course_request_data(fn):
         if isinstance(teachers, list):
             for teacher in teachers:
                 try:
-                    Users.objects.get(username=teacher)
+                    user = Users.objects.get(username=teacher)
+                    if not Users.is_valid_student_id(user.username):
+                        return Response(
+                            data={
+                                "message": "user with username: {} isn't a student".format(teacher)
+                            },
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
                 except Users.DoesNotExist:
                     return Response(
                         data={
