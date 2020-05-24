@@ -204,7 +204,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (IsCourseTeacher|ReadOnly,)
+    permission_classes = (IsCourseTeacher&IsTeacherUser|ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
@@ -222,6 +222,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         try:
             course = self.queryset.get(course_name=kwargs["name"])
+            self.check_object_permissions(request, course)
             serializer = CoursesSerializer()
             updated_course = serializer.update(course, request.data)
             return Response(CoursesSerializer(updated_course).data)
@@ -236,6 +237,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         try:
             course = self.queryset.get(course_name=kwargs["name"])
+            self.check_object_permissions(request, course)
             course.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Courses.DoesNotExist:

@@ -17,13 +17,13 @@ class BaseViewTest(APITestCase):
     client = APIClient()
 
     def setUp(self):
-        # create an admin user
+        # create a teacher user
         self.teacher = BaseViewTest.create_teacher(
             teacher_email="jonny@matcom.uh.cu",
             first_name="John",
             last_name="Doe",
         )
-        # create a regular user
+        # create a student user
         self.student = BaseViewTest.create_student(
             student_id=BaseViewTest.get_random_student_ids(1)[0],
             first_name="Jane",
@@ -447,7 +447,15 @@ class CoursesViewTest(BaseViewTest):
         super(CoursesViewTest, self).setUp()
 
         # add test data
-        [self.create_course(CoursesViewTest.COURSE_NAMES[i]) for i in range(4)]
+        courses = [self.create_course(CoursesViewTest.COURSE_NAMES[i]) for i in range(4)]
+
+        self.student_assistant = BaseViewTest.create_student(
+            student_id=BaseViewTest.get_random_student_ids(1)[0],
+            first_name="George",
+            last_name="Smith",
+        )
+        self.student_assistant.teaching.set(courses)
+        self.student_assistant.save()
 
     def test_get_all_courses(self):
         """
@@ -509,12 +517,36 @@ class CoursesViewTest(BaseViewTest):
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_update_a_course_no_teacher_user(self):
+    def test_update_a_course_no_course_teacher(self):
         """
-            This test ensures that a not teacher user can't update a course
+            This test ensures that to update a course the user need to be
+            a teacher of the course
         """
 
-        self.login_client(username=self.student.username, password=self.student.username)
+        self.login_client(self.teacher.username, 'testing')
+
+        # hit the API endpoint unauthorized user
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        course_data = {
+            "course_name": "Operating System",
+            "course_details": "New course details",
+            "teachers": [self.teacher.username, self.student.username]
+        }
+        response = self.make_request("courses-detail", kind="put",
+            data=course_data, name=course_name
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_a_course_student_assistant(self):
+        """
+            This test ensures that a course student assistant user can't 
+            update a course
+        """
+
+        self.login_client(
+            username=self.student_assistant.username,
+            password=self.student_assistant.username
+        )
 
         # hit the API endpoint unauthorized user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
@@ -588,6 +620,8 @@ class CoursesViewTest(BaseViewTest):
             'course_details': "New course detail",
             "teachers": [self.teacher.username, self.student.username]
         }
+        self.teacher.teaching.add(Courses.objects.filter(course_name=course_name).get())
+        self.teacher.save()
 
         response = self.make_request("courses-detail", kind="put",
             data=course_data,
@@ -610,10 +644,29 @@ class CoursesViewTest(BaseViewTest):
 
     def test_delete_a_course_no_teacher_user(self):
         """
-            This test ensures that a no teacher user can't delete a course
+            This test ensures that to delete a course the user need to be
+            a teacher of the course
         """
 
-        self.login_client(username=self.student.username, password=self.student.username)
+        self.login_client(self.teacher.username, 'testing')
+
+        # hit the API endpoint
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        response = self.make_request("courses-detail", kind="delete",
+            name=course_name
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_a_course_student_assistant(self):
+        """
+            This test ensures that a course student assistant user can't 
+            delete a course
+        """
+
+        self.login_client(
+            username=self.student_assistant.username,
+            password=self.student_assistant.username
+        )
 
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
@@ -648,6 +701,8 @@ class CoursesViewTest(BaseViewTest):
         self.login_client(self.teacher.username, 'testing')
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        self.teacher.teaching.add(Courses.objects.filter(course_name=course_name).get())
+        self.teacher.save()
         response = self.make_request("courses-detail", kind="delete",
             name=course_name
         )
@@ -673,7 +728,10 @@ class CoursesViewTest(BaseViewTest):
             This test ensures that a unauthorized user can't create a course
         """
 
-        self.login_client(username=self.student.username, password=self.student.username)
+        self.login_client(
+            username=self.student_assistant.username,
+            password=self.student_assistant.username
+        )
 
         course = {
             "course_name": "Operating System",
@@ -752,27 +810,25 @@ class AttendancesViewTest(BaseViewTest):
     def setUp(self):
         super(AttendancesViewTest, self).setUp()
 
-        # add test data
-        ids = BaseViewTest.get_random_student_ids(4)
-        first_names = ["John", "Jane", "John", "Jane"]
-        last_names = ["Doe", "Doe", "Smith", "Smith"]
-        students = [self.create_student(ids[i], first_names[i], last_names[i]) for i in range(4)]
-        self.student_assistant = students[0]
-
-        emails = [first_names[i].lower()+"."+last_names[i].lower()+"@matcom.uh.cu" for i in range(4)]
-        teachers = [self.create_teacher(emails[i], first_names[i], last_names[i]) for i in range(4)]
+        # adding test data
+        self.student_assistant = BaseViewTest.create_student(
+            student_id=BaseViewTest.get_random_student_ids(1)[0],
+            first_name="George",
+            last_name="Smith",
+        )
 
         course_names = ["Programming", "Artificial Intelligence", "Computer Architecture", "Computer Vision"]
         courses = [self.create_course(course_name) for course_name in course_names]
         self.student_assistant.teaching.add(courses[0])
-        courses[0].teachers.add(self.student_assistant)
+        self.student_assistant.save()
 
         class_types = ["Final Test", "Lab Lesson", "Practical Lesson", "Conference"]
         class_types = [self.create_class_type(class_type) for class_type in class_types]
 
         dates = [datetime.date.today() - datetime.timedelta(days=days) for days in range(4)]
         details = ["", "Lesson Before Final Test", "Last Practical Lesson", "First Conference"]
-        [self.create_attendance(students[i], teachers[i], dates[i], courses[i],
+        students = [self.student, self.student_assistant]
+        [self.create_attendance(students[i%2], self.teacher, dates[i], courses[i],
                                 class_types[i], details[i]) for i in range(4)]
 
     def create_attendance_data(self, create_objects=True):
