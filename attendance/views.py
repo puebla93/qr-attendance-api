@@ -176,8 +176,8 @@ class ListCreateCoursesView(generics.ListCreateAPIView):
 
         try:
             course = Courses.objects.get(course_name=course_name)
-        except ClassTypes.DoesNotExist:
-            course = Courses.get_or_cretate_class_type(course_name, course_details, teachers)
+        except Courses.DoesNotExist:
+            course = Courses.get_or_cretate_course(course_name, course_details, teachers)
         else:
             return Response(
                 data={
@@ -219,8 +219,11 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         try:
             course = self.queryset.get(course_name=kwargs["name"])
+
+            to_update = CoursesDetailView.get_data_to_update(request.data)
+
             serializer = CoursesSerializer()
-            updated_course = serializer.update(course, request.data)
+            updated_course = serializer.update(course, to_update)
             return Response(CoursesSerializer(updated_course).data)
         except Courses.DoesNotExist:
             return Response(
@@ -243,6 +246,17 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+    @staticmethod
+    def get_data_to_update(new_data):
+        course_name = new_data["course_name"]
+        course_details = new_data.get("course_details", "")
+        teachers = new_data.get("teachers", [])
+        teachers = [Users.objects.get(username=teacher) for teacher in teachers]
+        return {
+            "course_name": course_name,
+            "course_details": course_details,
+            "teachers": teachers
+        }
 
 class ListCreateAttendancesView(generics.ListCreateAPIView):
     """

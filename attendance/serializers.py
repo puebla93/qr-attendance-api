@@ -18,13 +18,15 @@ class ClassTypesSerializer(serializers.ModelSerializer):
 
 
 class CoursesSerializer(serializers.ModelSerializer):
+    teachers = serializers.SlugRelatedField(many=True, queryset=Users.objects.all(), slug_field='username')
+
     class Meta:
         model = Courses
-        fields = ("course_name", "course_details")
+        fields = ("course_name", "course_details", "teachers")
 
 
 class AttendancesSerializer(serializers.ModelSerializer):
-    student_id = serializers.CharField(source='student.username')
+    student_id = serializers.StringRelatedField(source='student')
     student_name = FunctionRelatedField(source='student', func_name="get_full_name")
     teacher_name = FunctionRelatedField(source='teacher', func_name="get_full_name")
     course_name = serializers.StringRelatedField(source='course')

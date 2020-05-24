@@ -35,7 +35,7 @@ def validate_class_type_request_data(fn):
         if not class_type:
             return Response(
                 data={
-                    "message": "class_type are required to create a class type"
+                    "message": "class_type is required to create/update a class type"
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -49,7 +49,7 @@ def validate_course_request_data(fn):
         if not course_name:
             return Response(
                 data={
-                    "message": "name are required to create a course"
+                    "message": "course_name is required to create/update a course"
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )

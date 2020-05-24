@@ -82,9 +82,11 @@ class BaseViewTest(APITestCase):
             return ClassTypes.objects.create(class_type=class_type)
 
     @staticmethod
-    def create_course(course_name=""):
+    def create_course(course_name="", course_details="", teachers=[]):
         if course_name != "":
-            return Courses.objects.create(course_name=course_name)
+            course = Courses.objects.create(course_name=course_name, course_details=course_details)
+            course.teachers.set(teachers)
+            return course
 
     @staticmethod
     def create_attendance(
@@ -283,7 +285,10 @@ class ClassTypesViewTest(BaseViewTest):
             data={"bad_class_type_key": new_class_type},
             type=class_type
         )
-        self.assertEqual(response.data["message"], "class_type are required to create a class type")
+        self.assertEqual(
+            response.data["message"],
+            "class_type is required to create/update a class type"
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_a_class_type(self):
@@ -384,40 +389,39 @@ class ClassTypesViewTest(BaseViewTest):
         response = self.make_request("class_types-list-create", kind="post", data=class_type)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_create_an_invalid_class_type(self):
+    def test_create_a_class_type_with_invalid_data(self):
         """
             This test ensures that a single class type can't be created with invalid data
         """
 
         self.login_client(self.admin.username, 'testing')
 
-        invalid_class_type = {}
+        invalid_class_type = {"bad_class_type_key": "New class type"}
 
         # test with invalid data
         response = self.make_request("class_types-list-create", kind="post", data=invalid_class_type)
         self.assertEqual(
             response.data["message"],
-            "class_type are required to create a class type"
+            "class_type is required to create/update a class type"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_a_class_type_that_already_exists(self):
         """
-            This test ensures that a single class type can be created
-            although already exists
+            This test ensures that a single class type can't be created
+            if already exists
         """
-
-        _class_type = self.create_class_type("Partial Exam")
 
         self.login_client(self.admin.username, 'testing')
 
         # hit the API endpoint
-        class_type = {"class_type": "Partial Exam"}
-        response = self.make_request("class_types-list-create", kind="post", data=class_type)
+        class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
+        response = self.make_request("class_types-list-create", kind="post",
+            data={"class_type": class_type})
 
         self.assertEqual(
             response.data["message"],
-            "class type: {} already exists".format(class_type["class_type"])
+            "class type: {} already exists".format(class_type)
         )
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
 
@@ -499,10 +503,13 @@ class CoursesViewTest(BaseViewTest):
 
         # hit the API endpoint no logged user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
-        new_course_name = "New course no logged user"
+        course_data = {
+            "course_name": "Operating System",
+            "course_details": "New course details",
+            "teachers": [self.admin.username, self.user.username]
+        }
         response = self.make_request("courses-detail", kind="put",
-            data={"course_name": new_course_name},
-            name=course_name
+            data=course_data, name=course_name
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -515,10 +522,13 @@ class CoursesViewTest(BaseViewTest):
 
         # hit the API endpoint unauthorized user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
-        new_course_name = "New course unauthorized user"
+        course_data = {
+            "course_name": "Operating System",
+            "course_details": "New course details",
+            "teachers": [self.admin.username, self.user.username]
+        }
         response = self.make_request("courses-detail", kind="put",
-            data={"course_name": new_course_name},
-            name=course_name
+            data=course_data, name=course_name
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -530,9 +540,14 @@ class CoursesViewTest(BaseViewTest):
         self.login_client(self.admin.username, 'testing')
 
         # test with invalid data
-        course_name = "Course doesn't exist"
+        course_name = "Operating System"
+        course_data = {
+            "course_name": "Compilation",
+            "course_details": "New course details",
+            "teachers": [self.admin.username, self.user.username]
+        }
         response = self.make_request("courses-detail", kind="put",
-            data={"course_name": "Any Value"},
+            data=course_data,
             name=course_name
         )
         self.assertEqual(
@@ -540,6 +555,28 @@ class CoursesViewTest(BaseViewTest):
             "Course with name: \"{}\" does not exist".format(course_name)
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_a_course_with_invalid_data(self):
+        """
+            This test ensures that a single course can't be updated without
+            corresponding data
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint valid user
+        course = random.choice(CoursesViewTest.COURSE_NAMES)
+        course_data = {
+            "bad_course_name_key": "Operating System",
+            "course_details": "New course details",
+            "teachers": [self.admin.username, self.user.username]
+        }
+        response = self.make_request("courses-detail", kind="put",
+            data=course_data,
+            name=course
+        )
+        self.assertEqual(response.data["message"], "course_name is required to create/update a course")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_a_course(self):
         """
@@ -550,16 +587,17 @@ class CoursesViewTest(BaseViewTest):
 
         # hit the API endpoint valid user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
-        course = {
-            'course_name': "New course",
-            'course_details': "New course detail"
+        course_data = {
+            'course_name': "Operating System",
+            'course_details': "New course detail",
+            "teachers": [self.admin.username, self.user.username]
         }
 
         response = self.make_request("courses-detail", kind="put",
-            data=course,
+            data=course_data,
             name=course_name
         )
-        self.assertEqual(response.data, course)
+        self.assertEqual(response.data, course_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_a_course_no_logged_user(self):
@@ -618,6 +656,96 @@ class CoursesViewTest(BaseViewTest):
             name=course_name
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_create_a_course_no_logged_user(self):
+        """
+            This test ensures that to create a course the user need to be logged
+        """
+
+        course = {
+            "course_name": "Operating System",
+            "course_details": "New course details",
+            "teachers": [self.admin.username, self.user.username]
+        }
+
+        # hit the API endpoint
+        response = self.make_request("courses-list-create", kind="post", data=course)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_a_course_no_authorized_user(self):
+        """
+            This test ensures that a unauthorized user can't create a course
+        """
+
+        self.login_client(self.user.username, 'testing')
+
+        course = {
+            "course_name": "Operating System",
+            "course_details": "New course details",
+            "teachers": [self.admin.username, self.user.username]
+        }
+
+        # hit the API endpoint
+        response = self.make_request("courses-list-create", kind="post", data=course)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_a_course_with_invalid_data(self):
+        """
+            This test ensures that a single course can't be created with invalid data
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        invalid_course = {
+            "bad_course_name_key": "Operating System",
+            "course_details": "New course details",
+            "teachers": [self.admin.username, self.user.username]
+        }
+
+        # test with invalid data
+        response = self.make_request("courses-list-create", kind="post", data=invalid_course)
+        self.assertEqual(
+            response.data["message"],
+            "course_name is required to create/update a course"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_a_course_that_already_exists(self):
+        """
+            This test ensures that a single course can't be created
+            if already exists
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint
+        course_name = random.choice(CoursesViewTest.COURSE_NAMES)
+        course = {"course_name": course_name}
+        response = self.make_request("courses-list-create", kind="post", data=course)
+
+        self.assertEqual(
+            response.data["message"],
+            "course: {} already exists".format(course_name)
+        )
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+
+    def test_create_a_course(self):
+        """
+            This test ensures that a single course can be created
+        """
+
+        self.login_client(self.admin.username, 'testing')
+
+        # hit the API endpoint
+        course = {
+            "course_name": "Operating System",
+            "course_details": "New course details",
+            "teachers": [self.admin.username, self.user.username]
+        }
+        response = self.make_request("courses-list-create", kind="post", data=course)
+
+        self.assertEqual(response.data, course)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
 class AttendancesViewTest(BaseViewTest):
