@@ -56,7 +56,7 @@ class Users(User):
 
     @property
     def is_student_assistant_user(self):
-        return self.teaching
+        return bool(Users.is_valid_student_id(self.username) and self.teaching)
 
 
 class ClassTypes(models.Model):
