@@ -204,7 +204,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (IsTeacherUser|ReadOnly,)
+    permission_classes = (IsCourseTeacher|ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
