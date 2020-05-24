@@ -4,4 +4,5 @@ from .models import *
 
 admin.site.register(ClassTypes)
 admin.site.register(Courses)
+admin.site.register(Users)
 admin.site.register(Attendances)

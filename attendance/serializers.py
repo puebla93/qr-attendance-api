@@ -24,6 +24,14 @@ class CoursesSerializer(serializers.ModelSerializer):
         model = Courses
         fields = ("course_name", "course_details", "teachers")
 
+    def update(self, instance, validated_data):
+        instance.course_name = validated_data["course_name"]
+        instance.course_details = validated_data.get("course_details", "")
+        teachers = validated_data.get("teachers", [])
+        teachers = [Users.objects.get(username=teacher) for teacher in teachers]
+        instance.teachers.set(teachers)
+        return instance
+
 
 class AttendancesSerializer(serializers.ModelSerializer):
     student_id = serializers.StringRelatedField(source='student')
