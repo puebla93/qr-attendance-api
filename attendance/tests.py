@@ -757,12 +757,15 @@ class AttendancesViewTest(BaseViewTest):
         first_names = ["John", "Jane", "John", "Jane"]
         last_names = ["Doe", "Doe", "Smith", "Smith"]
         students = [self.create_student(ids[i], first_names[i], last_names[i]) for i in range(4)]
+        self.student_assistant = students[0]
 
         emails = [first_names[i].lower()+"."+last_names[i].lower()+"@matcom.uh.cu" for i in range(4)]
         teachers = [self.create_teacher(emails[i], first_names[i], last_names[i]) for i in range(4)]
 
         course_names = ["Programming", "Artificial Intelligence", "Computer Architecture", "Computer Vision"]
         courses = [self.create_course(course_name) for course_name in course_names]
+        self.student_assistant.teaching.add(courses[0])
+        courses[0].teachers.add(self.student_assistant)
 
         class_types = ["Final Test", "Lab Lesson", "Practical Lesson", "Conference"]
         class_types = [self.create_class_type(class_type) for class_type in class_types]
@@ -917,6 +920,44 @@ class AttendancesViewTest(BaseViewTest):
         response = self.make_request("attendances-list-create", kind="post", data=attendance)
 
         attendance.update({'teacher_name':self.teacher.get_full_name()})
+        attendance['student_name'] = " ".join(attendance['student_name'])
+        self.assertEqual(response.data, attendance)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_an_attendance_by_a_student_assistant_bad_course(self):
+        """
+            This test ensures that a single attendance can't be added by a
+            student assistant of other course
+        """
+
+        self.login_client(
+            username=self.student_assistant.username, 
+            password=self.student_assistant.username
+        )
+
+        # hit the API endpoint
+        attendance = self.create_attendance_data()
+        response = self.make_request("attendances-list-create", kind="post", data=attendance)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_an_attendance_by_a_student_assistant(self):
+        """
+            This test ensures that a single attendance can be added by one of its
+            student assistants
+        """
+
+        self.login_client(
+            username=self.student_assistant.username, 
+            password=self.student_assistant.username
+        )
+
+        # hit the API endpoint
+        attendance = self.create_attendance_data()
+        student_assistant_course = self.student_assistant.teaching.all()[0]
+        attendance['course_name'] = student_assistant_course.course_name
+        response = self.make_request("attendances-list-create", kind="post", data=attendance)
+
+        attendance.update({'teacher_name':self.student_assistant.get_full_name()})
         attendance['student_name'] = " ".join(attendance['student_name'])
         self.assertEqual(response.data, attendance)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
