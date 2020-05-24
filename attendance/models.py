@@ -7,6 +7,9 @@ class ClassTypes(models.Model):
     # class type (eg. Practical Lesson, Conference)
     class_type = models.CharField(max_length=255, null=False, unique=True)
 
+    class Meta:
+        ordering = ['class_type']
+
     def __str__(self):
         return self.class_type
 
@@ -28,7 +31,10 @@ class Courses(models.Model):
     # course details (eg. Optative course, Elective course)
     course_details = models.TextField(default='')
 
-    teachers = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
+    teachers = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='teaching')
+
+    class Meta:
+        ordering = ['course_name']
 
     def __str__(self):
         return self.course_name
@@ -50,8 +56,6 @@ class Courses(models.Model):
 class Users(AbstractUser):
     TEACHERS_EMAIL_ADDRESS = '@matcom.uh.cu'
     STUDENT_ID_LENGTH = 11
-
-    teaching = models.ManyToManyField(Courses, blank=True)
 
     @classmethod
     def is_valid_teacher_email(cls, teacher_email):
@@ -111,6 +115,9 @@ class Attendances(models.Model):
 
     # class details (eg. Last Practical Lesson, First Conference)
     details =  models.TextField(default='')
+
+    class Meta:
+        ordering = ['date']
 
     def __str__(self):
         return "{} - {}:{} - {}".format(self.student, self.class_type, self.course, self.date)
