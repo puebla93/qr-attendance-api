@@ -26,3 +26,12 @@ class IsStudentAssistantUser(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_student_assistant)
+
+class IsOwner(BasePermission):
+    """
+        Custom permission to only allow owners of an object to access it.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        # Access permissions are only allowed to the owner of the obj.
+        return obj.owner == request.user
