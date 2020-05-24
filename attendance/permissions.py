@@ -26,7 +26,12 @@ class IsStudentAssistantUser(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_student_assistant)
+        course_name = request.data["course_name"]
+        try:
+            course = Courses.objects.get(course_name=course_name)
+        except Courses.DoesNotExist:
+            return False
+        return bool(request.user and course in request.user.teaching)
 
 
 class IsOwner(BasePermission):
@@ -36,4 +41,4 @@ class IsOwner(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         # Access permissions are only allowed to the owner of the obj.
-        return obj.owner == request.user
+        return obj.student == request.user
