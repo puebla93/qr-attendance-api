@@ -18,18 +18,14 @@ class BaseViewTest(APITestCase):
 
     def setUp(self):
         # create an admin user
-        self.admin = Users.objects.create_superuser(
-            username="jonny",
-            email="jonny@email.com",
-            password="testing",
+        self.teacher = BaseViewTest.create_teacher(
+            teacher_email="jonny@matcom.uh.cu",
             first_name="John",
             last_name="Doe",
         )
         # create a regular user
-        self.user = Users.objects.create_user(
-            username="jane",
-            email="jane@email.com",
-            password="testing",
+        self.student = BaseViewTest.create_student(
+            student_id=BaseViewTest.get_random_student_ids(1)[0],
             first_name="Jane",
             last_name="Doe",
         )
@@ -71,7 +67,7 @@ class BaseViewTest(APITestCase):
             return Users.objects.create_user(
                 username=teacher_email,
                 email=teacher_email,
-                password="password",
+                password="testing",
                 first_name=first_name,
                 last_name=last_name
             )
@@ -240,7 +236,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test ensures that a not teacher user can't update a class_type
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         # hit the API endpoint unauthorized user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
@@ -256,7 +252,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test try to update a class type that doesn't exists and make assertions
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # test with invalid data
         class_type = "Class type doesn't exist"
@@ -276,7 +272,7 @@ class ClassTypesViewTest(BaseViewTest):
             corresponding data
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint valid user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
@@ -296,7 +292,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test ensures that a single class_type can be updated
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint valid user
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
@@ -325,7 +321,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test ensures that a not teacher user can't delete a class_type
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
@@ -339,7 +335,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test try to delet a class type that doesn't exists and make assertions
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # test with invalid data
         class_type = "Class type doesn't exist"
@@ -357,7 +353,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test ensures that a class_type of given type can be deleted
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
         response = self.make_request("class_types-detail", kind="delete",
@@ -381,7 +377,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test ensures that a unauthorized user can't create a class type
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         class_type = {"class_type": "Partial Exam"}
 
@@ -394,7 +390,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test ensures that a single class type can't be created with invalid data
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         invalid_class_type = {"bad_class_type_key": "New class type"}
 
@@ -412,7 +408,7 @@ class ClassTypesViewTest(BaseViewTest):
             if already exists
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint
         class_type = random.choice(ClassTypesViewTest.CLASS_TYPES)
@@ -430,7 +426,7 @@ class ClassTypesViewTest(BaseViewTest):
             This test ensures that a single class type can be created
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint
         class_type = {"class_type": "Partial Exam"}
@@ -506,7 +502,7 @@ class CoursesViewTest(BaseViewTest):
         course_data = {
             "course_name": "Operating System",
             "course_details": "New course details",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
         response = self.make_request("courses-detail", kind="put",
             data=course_data, name=course_name
@@ -518,14 +514,14 @@ class CoursesViewTest(BaseViewTest):
             This test ensures that a not teacher user can't update a course
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         # hit the API endpoint unauthorized user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
         course_data = {
             "course_name": "Operating System",
             "course_details": "New course details",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
         response = self.make_request("courses-detail", kind="put",
             data=course_data, name=course_name
@@ -537,14 +533,14 @@ class CoursesViewTest(BaseViewTest):
             This test try to update a course that doesn't exists and make assertions
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # test with invalid data
         course_name = "Operating System"
         course_data = {
             "course_name": "Compilation",
             "course_details": "New course details",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
         response = self.make_request("courses-detail", kind="put",
             data=course_data,
@@ -562,14 +558,14 @@ class CoursesViewTest(BaseViewTest):
             corresponding data
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint valid user
         course = random.choice(CoursesViewTest.COURSE_NAMES)
         course_data = {
             "bad_course_name_key": "Operating System",
             "course_details": "New course details",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
         response = self.make_request("courses-detail", kind="put",
             data=course_data,
@@ -583,14 +579,14 @@ class CoursesViewTest(BaseViewTest):
             This test ensures that a single course can be updated
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint valid user
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
         course_data = {
             'course_name': "Operating System",
             'course_details': "New course detail",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
 
         response = self.make_request("courses-detail", kind="put",
@@ -617,7 +613,7 @@ class CoursesViewTest(BaseViewTest):
             This test ensures that a no teacher user can't delete a course
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
@@ -631,7 +627,7 @@ class CoursesViewTest(BaseViewTest):
             This test try to delet a course that doesn't exists and make assertions
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # test with invalid data
         course_name = "Course doesn't exist"
@@ -649,7 +645,7 @@ class CoursesViewTest(BaseViewTest):
             This test ensures that a course of given type can be deleted
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
         response = self.make_request("courses-detail", kind="delete",
@@ -665,7 +661,7 @@ class CoursesViewTest(BaseViewTest):
         course = {
             "course_name": "Operating System",
             "course_details": "New course details",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
 
         # hit the API endpoint
@@ -677,12 +673,12 @@ class CoursesViewTest(BaseViewTest):
             This test ensures that a unauthorized user can't create a course
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         course = {
             "course_name": "Operating System",
             "course_details": "New course details",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
 
         # hit the API endpoint
@@ -694,12 +690,12 @@ class CoursesViewTest(BaseViewTest):
             This test ensures that a single course can't be created with invalid data
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         invalid_course = {
             "bad_course_name_key": "Operating System",
             "course_details": "New course details",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
 
         # test with invalid data
@@ -716,7 +712,7 @@ class CoursesViewTest(BaseViewTest):
             if already exists
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint
         course_name = random.choice(CoursesViewTest.COURSE_NAMES)
@@ -734,13 +730,13 @@ class CoursesViewTest(BaseViewTest):
             This test ensures that a single course can be created
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint
         course = {
             "course_name": "Operating System",
             "course_details": "New course details",
-            "teachers": [self.admin.username, self.user.username]
+            "teachers": [self.teacher.username, self.student.username]
         }
         response = self.make_request("courses-list-create", kind="post", data=course)
 
@@ -814,7 +810,7 @@ class AttendancesViewTest(BaseViewTest):
             exist when we make a GET request to the attendances/ endpoint
         """
 
-        self.login_client(self.user.username, "testing")
+        self.login_client(username=self.student.username, password=self.student.username)
 
         # hit the API endpoint
         response = self.make_request("attendances-list-create")
@@ -839,7 +835,7 @@ class AttendancesViewTest(BaseViewTest):
             This test try to get an attendances that doesn't exists and make assertions
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         # test with a attendance that does not exist
         attendance = 5
@@ -856,7 +852,7 @@ class AttendancesViewTest(BaseViewTest):
             returned
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         # hit the API endpoint
         attendance = random.randint(1, 4)
@@ -883,7 +879,7 @@ class AttendancesViewTest(BaseViewTest):
             This test ensures that an unauthorized user can't create an attendance
         """
 
-        self.login_client(self.user.username, 'testing')
+        self.login_client(username=self.student.username, password=self.student.username)
 
         attendance = self.create_attendance_data()
 
@@ -896,7 +892,7 @@ class AttendancesViewTest(BaseViewTest):
             This test ensures that a single attendance can't be added with invalid data
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         invalid_attendance = {}
 
@@ -914,13 +910,13 @@ class AttendancesViewTest(BaseViewTest):
             student, class type, course having been created before
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint
         attendance = self.create_attendance_data(create_objects=False)
         response = self.make_request("attendances-list-create", kind="post", data=attendance)
 
-        attendance.update({'teacher_name':self.admin.get_full_name()})
+        attendance.update({'teacher_name':self.teacher.get_full_name()})
         attendance['student_name'] = " ".join(attendance['student_name'])
         self.assertEqual(response.data, attendance)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -930,13 +926,13 @@ class AttendancesViewTest(BaseViewTest):
             This test ensures that a single attendance can be added
         """
 
-        self.login_client(self.admin.username, 'testing')
+        self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint
         attendance = self.create_attendance_data()
         response = self.make_request("attendances-list-create", kind="post", data=attendance)
 
-        attendance.update({'teacher_name':self.admin.get_full_name()})
+        attendance.update({'teacher_name':self.teacher.get_full_name()})
         attendance['student_name'] = " ".join(attendance['student_name'])
         self.assertEqual(response.data, attendance)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -966,8 +962,8 @@ class AuthLoginUserTest(BaseViewTest):
         """
 
         user_data = {
-            "username": self.user.username,
-            "password": "testing"
+            "username": self.student.username,
+            "password": self.student.username
         }
         response = self.make_request("auth-login", kind="post", data=user_data)
         # assert token key exists
