@@ -255,7 +255,7 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
-    permission_classes = (IsTeacherUser|permissions.IsAuthenticated&ReadOnly,)
+    permission_classes = (IsTeacherUser|IsStudentAssistantUser|IsOwner&ReadOnly,)
 
     @validate_attendance_request_data
     def post(self, request, *args, **kwargs):
@@ -297,11 +297,12 @@ class AttendancesDetailView(generics.RetrieveAPIView):
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsTeacherUser|IsStudentAssistantUser|IsOwner&ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
             attendance = self.queryset.get(id=kwargs["id"])
+            self.check_object_permissions(request, attendance)
             return Response(AttendancesSerializer(attendance).data)
         except Attendances.DoesNotExist:
             return Response(
