@@ -50,6 +50,14 @@ class Users(User):
             )
         return student_user
 
+    @property
+    def is_teacher_user(self):
+        return Users.is_valid_teacher_email(self.username)
+
+    @property
+    def is_student_assistant_user(self):
+        return self.teaching
+
 
 class ClassTypes(models.Model):
     # class type (eg. Practical Lesson, Conference)
