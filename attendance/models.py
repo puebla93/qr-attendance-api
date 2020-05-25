@@ -55,8 +55,12 @@ class Users(User):
         return Users.is_valid_teacher_email(self.username)
 
     @property
+    def is_student_user(self):
+        return Users.is_valid_student_id(self.username)
+
+    @property
     def is_student_assistant_user(self):
-        return bool(Users.is_valid_student_id(self.username) and self.teaching)
+        return bool(self.is_student_user and self.teaching.all())
 
 
 class ClassTypes(models.Model):
@@ -106,6 +110,7 @@ class Courses(models.Model):
                 course_details=course_details,
             )
             course.teachers.set(teachers)
+            course.save()
         return course
 
 
