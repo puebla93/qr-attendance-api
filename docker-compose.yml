@@ -4,6 +4,7 @@ services:
 
     api:
         build: .
+        image: qr_attendance_api
         command: bash -c "python manage.py makemigrations && python manage.py migrate && gunicorn -w 1 --bind 0.0.0.0:8000 api.wsgi"
         container_name: attendance_api
         volumes:
