@@ -4,10 +4,10 @@ from rest_framework.response import Response
 from rest_framework.views import status
 from rest_framework_jwt.settings import api_settings
 
-from .models import *
-from .serializers import *
-from .permissions import *
 from .decorators import *
+from .models import *
+from .permissions import *
+from .serializers import *
 
 # Get the JWT settings
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -176,6 +176,7 @@ class ListCreateCoursesView(generics.ListCreateAPIView):
         course_name = request.data["course_name"]
         course_details = request.data.get("course_details", "")
         teachers = request.data.get("teachers", [])
+        teachers.append(request.user.username)
 
         try:
             course = Courses.objects.get(course_name=course_name)
@@ -204,7 +205,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Courses.objects.all()
     serializer_class = CoursesSerializer
-    permission_classes = (IsCourseTeacher&IsTeacherUser|ReadOnly,)
+    permission_classes = (IsTeacherUser&IsCourseTeacher|ReadOnly,)
 
     def get(self, request, *args, **kwargs):
         try:
@@ -225,6 +226,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
             self.check_object_permissions(request, course)
             serializer = CoursesSerializer()
             updated_course = serializer.update(course, request.data)
+            updated_course.teachers.add(request.user)
             return Response(CoursesSerializer(updated_course).data)
         except Courses.DoesNotExist:
             return Response(
@@ -257,11 +259,16 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
-    permission_classes = (IsTeacherUser|IsStudentAssistantUser|IsOwner&ReadOnly,)
+    permission_classes = (IsAssistanceOwner|IsCourseTeacher,)
 
     @validate_attendance_request_data
     def post(self, request, *args, **kwargs):
         from datetime import date
+
+        course_name = request.data["course_name"]
+        course = Courses.get_or_cretate_course(course_name)
+        if course.teachers.all():
+            self.check_object_permissions(request, course)
 
         student_id = request.data["student_id"]
         student_name = request.data["student_name"]
@@ -269,8 +276,6 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
 
         teacher = request.user
 
-        course_name = request.data["course_name"]
-        course = Courses.get_or_cretate_course(course_name)
         class_type = request.data["class_type"]
         class_type = ClassTypes.get_or_cretate_class_type(class_type)
 
@@ -299,7 +304,7 @@ class AttendancesDetailView(generics.RetrieveAPIView):
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
-    permission_classes = (IsTeacherUser|IsStudentAssistantUser|IsOwner&ReadOnly,)
+    permission_classes = (IsAssistanceOwner|IsCourseTeacher&permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         try:

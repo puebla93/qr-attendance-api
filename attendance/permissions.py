@@ -1,4 +1,5 @@
 from rest_framework.permissions import SAFE_METHODS, BasePermission
+
 from .models import *
 
 
@@ -28,24 +29,18 @@ class IsCourseTeacher(BasePermission):
         Allows access only to teachers of a course.
     """
 
-    def has_object_permission(self, request, view, course):
-        return bool(request.user and request.user in course.teachers.all())
+    def has_object_permission(self, request, view, obj):
+        if isinstance(obj, Attendances):
+            course = obj.course
+        else:
+            course = obj
+        return request.user in course.teachers.all()
 
 
-class IsStudentAssistantUser(BasePermission):
+class IsAssistanceOwner(BasePermission):
     """
-        Allows access only to student assistant users.
-    """
-
-    def has_permission(self, request, view):
-        return bool(request.user and Users(request.user).is_student_assistant_user)
-
-
-class IsOwner(BasePermission):
-    """
-        Custom permission to only allow owners of an object to access it.
+        Allows access only to the student assistances.
     """
 
     def has_object_permission(self, request, view, obj):
-        # Access permissions are only allowed to the owner of the obj.
         return obj.student == request.user

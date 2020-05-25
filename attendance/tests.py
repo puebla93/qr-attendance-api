@@ -618,7 +618,7 @@ class CoursesViewTest(BaseViewTest):
         course_data = {
             'course_name': "Operating System",
             'course_details': "New course detail",
-            "teachers": [self.teacher.username, self.student.username]
+            'teachers': [self.student.username]
         }
         self.teacher.teaching.add(Courses.objects.filter(course_name=course_name).get())
         self.teacher.save()
@@ -627,6 +627,7 @@ class CoursesViewTest(BaseViewTest):
             data=course_data,
             name=course_name
         )
+        course_data['teachers'].insert(0, self.teacher.username)
         self.assertEqual(response.data, course_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -791,14 +792,15 @@ class CoursesViewTest(BaseViewTest):
         self.login_client(self.teacher.username, 'testing')
 
         # hit the API endpoint
-        course = {
+        course_data = {
             "course_name": "Operating System",
             "course_details": "New course details",
-            "teachers": [self.teacher.username, self.student.username]
+            "teachers": [self.student.username]
         }
-        response = self.make_request("courses-list-create", kind="post", data=course)
+        response = self.make_request("courses-list-create", kind="post", data=course_data)
 
-        self.assertEqual(response.data, course)
+        course_data['teachers'].insert(0, self.teacher.username)
+        self.assertEqual(response.data, course_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
@@ -816,19 +818,18 @@ class AttendancesViewTest(BaseViewTest):
             first_name="George",
             last_name="Smith",
         )
+        students = [self.student, self.student_assistant]
+        teachers = [self.student_assistant, self.teacher]
 
         course_names = ["Programming", "Artificial Intelligence", "Computer Architecture", "Computer Vision"]
-        courses = [self.create_course(course_name) for course_name in course_names]
-        self.student_assistant.teaching.add(courses[0])
-        self.student_assistant.save()
+        courses = [self.create_course(course_names[i], teachers=[teachers[i%2]]) for i in range(4)]
 
         class_types = ["Final Test", "Lab Lesson", "Practical Lesson", "Conference"]
         class_types = [self.create_class_type(class_type) for class_type in class_types]
 
         dates = [datetime.date.today() - datetime.timedelta(days=days) for days in range(4)]
         details = ["", "Lesson Before Final Test", "Last Practical Lesson", "First Conference"]
-        students = [self.student, self.student_assistant]
-        [self.create_attendance(students[i%2], self.teacher, dates[i], courses[i],
+        [self.create_attendance(students[i%2], teachers[i%2], dates[i], courses[i],
                                 class_types[i], details[i]) for i in range(4)]
 
     def create_attendance_data(self, create_objects=True):
@@ -889,6 +890,32 @@ class AttendancesViewTest(BaseViewTest):
         response = self.make_request("attendances-detail", id=attendance)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_get_an_attendance_invalid_teacher_user(self):
+        """
+            This test ensures that to get an attendance the user need to be
+            one of the course teachers
+        """
+
+        attendance = random.randrange(1, 4, 2)
+        self.login_client(username=self.teacher.username, password='testing')
+
+        # hit the API endpoint no logged user
+        response = self.make_request("attendances-detail", id=attendance)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_an_attendance_invalid_student_user(self):
+        """
+            This test ensures that to get an attendance the user need to be
+            the attendance student
+        """
+
+        attendance = random.randrange(2, 5, 2)
+        self.login_client(username=self.student.username, password=self.student.username)
+
+        # hit the API endpoint no logged user
+        response = self.make_request("attendances-detail", id=attendance)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_get_an_attendance_that_does_not_exist(self):
         """
             This test try to get an attendances that doesn't exists and make assertions
@@ -911,7 +938,7 @@ class AttendancesViewTest(BaseViewTest):
             returned
         """
 
-        self.login_client(username=self.student.username, password=self.student.username)
+        self.login_client(username=self.student_assistant.username, password=self.student_assistant.username)
 
         # hit the API endpoint
         attendance = random.randint(1, 4)
