@@ -1,15 +1,15 @@
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class Users(User):
+class Users(AbstractUser):
     TEACHERS_EMAIL_ADDRESS = '@matcom.uh.cu'
     STUDENT_ID_LENGTH = 11
 
-    class Meta:
+    class Meta(AbstractUser.Meta):
+        swappable = 'AUTH_USER_MODEL'
         ordering = ["last_name"]
-        proxy = True
 
     @classmethod
     def is_valid_teacher_email(cls, teacher_email):
