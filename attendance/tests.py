@@ -864,18 +864,61 @@ class AttendancesViewTest(BaseViewTest):
         response = self.make_request("attendances-list-create")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
-    def test_get_all_attendances(self):
+    def test_get_all_attendances_by_a_student(self):
         """
-            This test ensures that all attendances added in the setUp method
-            exist when we make a GET request to the attendances/ endpoint
+            This test ensures that a student can only access to his/her attendances 
         """
 
-        self.login_client(username=self.student.username, password=self.student.username)
+        self.login_client(
+            username=self.student.username,
+            password=self.student.username
+        )
 
         # hit the API endpoint
         response = self.make_request("attendances-list-create")
         # fetch the data from db
-        expected = Attendances.objects.all()
+        expected = Attendances.objects.filter(student=self.student)
+        serialized = AttendancesSerializer(expected, many=True)
+        self.assertEqual(response.data, serialized.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_all_attendances_by_a_student_assistant(self):
+        """
+            This test ensures that a student assistant can only access to his/her
+            attendances and the course attendances where he/she is teaching
+        """
+
+        self.login_client(
+            username=self.student_assistant.username,
+            password=self.student_assistant.username
+        )
+
+        # hit the API endpoint
+        response = self.make_request("attendances-list-create")
+
+        # fetch the data from db
+        student_attendances = Attendances.objects.filter(student=self.student_assistant)
+
+        teaching_courses = self.student_assistant.teaching.all()
+        teacher_attendances = Attendances.objects.filter(course__in=teaching_courses)
+
+        expected = teacher_attendances | student_attendances
+        serialized = AttendancesSerializer(expected, many=True)
+        self.assertEqual(response.data, serialized.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_all_attendances_by_a_teacher(self):
+        """
+            This test ensures that a teacher can only access to attendances of 
+            courses where he/she is teaching
+        """
+
+        self.login_client(username=self.teacher.username, password='testing')
+
+        # hit the API endpoint
+        response = self.make_request("attendances-list-create")
+        # fetch the data from db
+        expected = Attendances.objects.filter(teacher=self.teacher)
         serialized = AttendancesSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -990,22 +1033,25 @@ class AttendancesViewTest(BaseViewTest):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_create_an_attendance_without_created_attendance_data(self):
+    def test_create_an_attendance_by_a_student_assistant_no_existed_course(self):
         """
-            This test ensures that a single attendance can be added without
-            student, class type, course having been created before
+            This test ensures that a single attendance can't be added by a
+            student assistant if course doesn't exists
         """
 
-        self.login_client(self.teacher.username, 'testing')
+        self.login_client(
+            username=self.student_assistant.username, 
+            password=self.student_assistant.username
+        )
 
         # hit the API endpoint
         attendance = self.create_attendance_data(create_objects=False)
         response = self.make_request("attendances-list-create", kind="post", data=attendance)
-
-        attendance.update({'teacher_name':self.teacher.get_full_name()})
-        attendance['student_name'] = " ".join(attendance['student_name'])
-        self.assertEqual(response.data, attendance)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response.data["message"],
+            "course: \"{}\" does not exist".format(attendance['course_name'])
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_an_attendance_by_a_student_assistant_bad_course(self):
         """
@@ -1045,6 +1091,23 @@ class AttendancesViewTest(BaseViewTest):
         self.assertEqual(response.data, attendance)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_create_an_attendance_without_created_attendance_data(self):
+        """
+            This test ensures that a single attendance can be added without
+            student, class type, course having been created before
+        """
+
+        self.login_client(self.teacher.username, 'testing')
+
+        # hit the API endpoint
+        attendance = self.create_attendance_data(create_objects=False)
+        response = self.make_request("attendances-list-create", kind="post", data=attendance)
+
+        attendance.update({'teacher_name':self.teacher.get_full_name()})
+        attendance['student_name'] = " ".join(attendance['student_name'])
+        self.assertEqual(response.data, attendance)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
     def test_create_an_attendance(self):
         """
             This test ensures that a single attendance can be added
@@ -1054,6 +1117,8 @@ class AttendancesViewTest(BaseViewTest):
 
         # hit the API endpoint
         attendance = self.create_attendance_data()
+        teacher_course = random.choice(self.teacher.teaching.all())
+        attendance['course_name'] = teacher_course.course_name
         response = self.make_request("attendances-list-create", kind="post", data=attendance)
 
         attendance.update({'teacher_name':self.teacher.get_full_name()})

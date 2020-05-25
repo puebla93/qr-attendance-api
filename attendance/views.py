@@ -227,6 +227,7 @@ class CoursesDetailView(generics.RetrieveUpdateDestroyAPIView):
             serializer = CoursesSerializer()
             updated_course = serializer.update(course, request.data)
             updated_course.teachers.add(request.user)
+            updated_course.save()
             return Response(CoursesSerializer(updated_course).data)
         except Courses.DoesNotExist:
             return Response(
@@ -259,22 +260,45 @@ class ListCreateAttendancesView(generics.ListCreateAPIView):
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
-    permission_classes = (IsAssistanceOwner|IsCourseTeacher,)
+    permission_classes = (IsCourseTeacher&permissions.IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        student_attendances = self.queryset.filter(student=user)
+
+        teaching_courses = user.teaching.all()
+        teacher_attendances = self.queryset.filter(course__in=teaching_courses)
+
+        attendances = teacher_attendances | student_attendances
+
+        serializer = AttendancesSerializer(attendances, many=True)
+        return Response(serializer.data)
 
     @validate_attendance_request_data
     def post(self, request, *args, **kwargs):
         from datetime import date
 
+        teacher = request.user
+
         course_name = request.data["course_name"]
-        course = Courses.get_or_cretate_course(course_name)
-        if course.teachers.all():
+        try:
+            course = Courses.objects.get(course_name=course_name)
+        except Courses.DoesNotExist:
+            if teacher.is_student_user:
+                return Response(
+                    data={
+                        "message": "course: \"{}\" does not exist".format(course_name)
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            course = Courses.get_or_cretate_course(course_name, teachers=[teacher.username])
+        else:
             self.check_object_permissions(request, course)
 
         student_id = request.data["student_id"]
         student_name = request.data["student_name"]
         student = Users.get_or_create_student(student_id, student_name)
-
-        teacher = request.user
 
         class_type = request.data["class_type"]
         class_type = ClassTypes.get_or_cretate_class_type(class_type)
@@ -304,7 +328,7 @@ class AttendancesDetailView(generics.RetrieveAPIView):
 
     queryset = Attendances.objects.all()
     serializer_class = AttendancesSerializer
-    permission_classes = (IsAssistanceOwner|IsCourseTeacher&permissions.IsAuthenticated,)
+    permission_classes = ((IsAssistanceOwner|IsCourseTeacher)&permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         try:
